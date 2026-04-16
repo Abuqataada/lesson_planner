@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lesson Plan Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 0.25rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 1.5rem;
+            background-color: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0f2b4f;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+            color: #1e3c72;
+        }
+        .error {
+            color: red;
+            margin-top: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📘 AI Lesson Plan Generator</h1>
+    <form id="lessonForm">
+        <label for="class_name">Class Level</label>
+        <input type="text" id="class_name" name="class_name" placeholder="e.g., Year 7, Grade 5, JSS 1" required>
+
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name="subject" placeholder="e.g., Physics, Mathematics, English" required>
+
+        <label for="topic">Topic</label>
+        <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Forces, Fractions" required>
+
+        <button type="submit">✨ Generate Lesson Plan</button>
+    </form>
+    <div class="loading" id="loading">⏳ Generating lesson plan... (may take 10-20 seconds)</div>
+    <div class="error" id="error"></div>
+</div>
+
+<script>
+    const form = document.getElementById('lessonForm');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loadingDiv.style.display = 'block';
+        errorDiv.textContent = '';
+
+        const formData = new FormData(form);
+        const payload = {
+            class_name: formData.get('class_name'),
+            subject: formData.get('subject'),
+            topic: formData.get('topic')
+        };
+
+        try {
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to generate plan');
+            }
+
+            // Trigger download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Lesson_Plan_${payload.subject}_${payload.topic}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            errorDiv.textContent = `Error: ${err.message}`;
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
