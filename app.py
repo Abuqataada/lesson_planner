@@ -50,6 +50,17 @@ def add_logo(doc, logo_paths):
 
 import unicodedata
 
+def sanitize_filename(text: str, max_len: int = 40) -> str:
+    """Sanitize a string for use in a filename: remove special chars, replace spaces, truncate."""
+    # Remove any characters that are not alphanumeric, underscore, dash, or space
+    safe = ''.join(c for c in text if c.isalnum() or c in (' ', '-', '_'))
+    # Replace spaces with underscores
+    safe = safe.replace(' ', '_')
+    # Truncate to max_len
+    if len(safe) > max_len:
+        safe = safe[:max_len]
+    return safe
+
 def clean_text(text: str) -> str:
     """Replace smart quotes, apostrophes, and other Unicode punctuation with ASCII."""
     if not isinstance(text, str):
@@ -509,6 +520,7 @@ async def form():
     </html>
     """)
     
+
 @app.post("/generate")
 async def generate_plan(request: LessonPlanRequest):
     try:
@@ -530,7 +542,11 @@ async def generate_plan(request: LessonPlanRequest):
         # Generate Word document
         doc_bytes = create_lesson_plan_doc(plan_data, teacher_name="ISAH YUSUF")
 
-        filename = f"Lesson_Plan_{request.subject}_{request.topic}.docx"
+        # Sanitize subject and topic for filename (avoid long or invalid names)
+        safe_subject = sanitize_filename(request.subject, max_len=30)
+        safe_topic = sanitize_filename(request.topic, max_len=40)
+        filename = f"Lesson_Plan_{safe_subject}_{safe_topic}.docx"
+
         return Response(
             content=doc_bytes,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -538,3 +554,6 @@ async def generate_plan(request: LessonPlanRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+    
