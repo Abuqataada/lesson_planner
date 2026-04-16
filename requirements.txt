@@ -5,3 +5,4 @@ python-docx
 openai
 python-dotenv
 jinja2
+numpy
