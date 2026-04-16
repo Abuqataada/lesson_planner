@@ -48,9 +48,42 @@ def add_logo(doc, logo_paths):
     run.italic = True
     return False
 
+import unicodedata
+
+def clean_text(text: str) -> str:
+    """Replace smart quotes, apostrophes, and other Unicode punctuation with ASCII."""
+    if not isinstance(text, str):
+        text = str(text)
+    # Replace common problematic characters
+    replacements = {
+        '\u2018': "'",   # left single quote
+        '\u2019': "'",   # right single quote
+        '\u201c': '"',   # left double quote
+        '\u201d': '"',   # right double quote
+        '\u2013': '-',   # en dash
+        '\u2014': '-',   # em dash
+        '\u2026': '...', # ellipsis
+    }
+    for bad, good in replacements.items():
+        text = text.replace(bad, good)
+    # Normalize remaining Unicode characters to ASCII (decompose and filter)
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+    return text
+
 def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") -> bytes:
     doc = Document()
     set_landscape(doc)
+
+    # Clean all plan_data strings
+    plan_data = {k: clean_text(v) if isinstance(v, str) else v for k, v in plan_data.items()}
+    # Also clean nested structures like learning_objectives
+    if "learning_objectives" in plan_data:
+        lo = plan_data["learning_objectives"]
+        if isinstance(lo, dict):
+            for key in lo:
+                if isinstance(lo[key], str):
+                    lo[key] = clean_text(lo[key])
+        plan_data["learning_objectives"] = lo
 
     possible_logos = ["logo.png", "logo.jpg", "arndale_logo.png", "school_logo.jpg"]
     add_logo(doc, possible_logos)
@@ -76,20 +109,20 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     ]
 
     for i, (col1, col2) in enumerate(rows_data):
-        table_main.cell(i, 0).text = col1
+        table_main.cell(i, 0).text = clean_text(col1)
         if i == 8:
             cell2 = table_main.cell(i, 1)
             cell2.text = ''
             resources = plan_data.get("instructional_resources", [])
             if isinstance(resources, list):
                 for res in resources:
-                    p = cell2.add_paragraph(f"• {res}")
+                    p = cell2.add_paragraph(f"• {clean_text(res)}")
                     p.runs[0].font.size = Pt(11)
             else:
-                p = cell2.add_paragraph(f"• {resources}")
+                p = cell2.add_paragraph(f"• {clean_text(resources)}")
                 p.runs[0].font.size = Pt(11)
         else:
-            table_main.cell(i, 1).text = str(col2)
+            table_main.cell(i, 1).text = clean_text(str(col2))
 
     # Merge column 3 for Learning Objectives
     col3_cell = table_main.cell(0, 2)
@@ -104,17 +137,17 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     lo = plan_data.get("learning_objectives", {})
     col3_cell.add_paragraph("Basic Objective (for struggling learners):").runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
-    p_basic = col3_cell.add_paragraph(f"• {lo.get('basic', 'Define Physics as the study of matter, energy, and their interactions.')}")
+    p_basic = col3_cell.add_paragraph(f"• {clean_text(lo.get('basic', 'Define Physics as the study of matter, energy, and their interactions.'))}")
     p_basic.paragraph_format.left_indent = Pt(36)
 
     col3_cell.add_paragraph("Intermediate Objective (for most students):").runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
-    p_inter = col3_cell.add_paragraph(f"• {lo.get('intermediate', 'Explain the scope of Physics and its relationship with other sciences and technology.')}")
+    p_inter = col3_cell.add_paragraph(f"• {clean_text(lo.get('intermediate', 'Explain the scope of Physics and its relationship with other sciences and technology.'))}")
     p_inter.paragraph_format.left_indent = Pt(36)
 
     col3_cell.add_paragraph("Advanced Objective (for high-achieving students):").runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
-    p_adv = col3_cell.add_paragraph(f"• {lo.get('advanced', 'Analyse how a modern technology (e.g., a smartphone, GPS) is a practical application of multiple principles from different branches of Physics.')}")
+    p_adv = col3_cell.add_paragraph(f"• {clean_text(lo.get('advanced', 'Analyse how a modern technology (e.g., a smartphone, GPS) is a practical application of multiple principles from different branches of Physics.'))}")
     p_adv.paragraph_format.left_indent = Pt(36)
 
     doc.add_paragraph()
@@ -153,12 +186,13 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     table_dev.cell(1, 4).text = "STUDENTS' ACTIVITIES"
     table_dev.cell(1, 4).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    table_dev.cell(2, 0).text = plan_data.get("prior_knowledge", "General knowledge from previous lessons.")
-    table_dev.cell(2, 1).text = plan_data.get("warmup_activity", "Engaging starter to capture interest.")
-    table_dev.cell(2, 2).text = plan_data.get("learning_note", "Core content with definitions and examples.")
-    table_dev.cell(2, 3).text = plan_data.get("teacher_activities", "Teacher's actions during the lesson.")
-    table_dev.cell(2, 4).text = plan_data.get("student_activities", "Group work, individual tasks, discussions.")
-    table_dev.cell(2, 5).text = plan_data.get("assessment", "Formative assessment methods.")
+    # Insert cleaned text into the content row
+    table_dev.cell(2, 0).text = clean_text(plan_data.get("prior_knowledge", "General knowledge from previous lessons."))
+    table_dev.cell(2, 1).text = clean_text(plan_data.get("warmup_activity", "Engaging starter to capture interest."))
+    table_dev.cell(2, 2).text = clean_text(plan_data.get("learning_note", "Core content with definitions and examples."))
+    table_dev.cell(2, 3).text = clean_text(plan_data.get("teacher_activities", "Teacher's actions during the lesson."))
+    table_dev.cell(2, 4).text = clean_text(plan_data.get("student_activities", "Group work, individual tasks, discussions."))
+    table_dev.cell(2, 5).text = clean_text(plan_data.get("assessment", "Formative assessment methods."))
 
     doc.add_paragraph()
 
@@ -171,8 +205,8 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
         ("Flip Ticket (next Topic)", plan_data.get("flip_ticket", "Preview of next lesson."))
     ]
     for i, (label, text) in enumerate(plenary_data):
-        table_plenary.cell(i, 0).text = label
-        table_plenary.cell(i, 1).text = text
+        table_plenary.cell(i, 0).text = clean_text(label)
+        table_plenary.cell(i, 1).text = clean_text(text)
 
     doc.add_paragraph()
 
@@ -182,7 +216,7 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     left_cell = sig_row.cell(0, 0)
     p_teacher = left_cell.paragraphs[0]
     p_teacher.text = "Teacher's Name: "
-    run = p_teacher.add_run(teacher_name)
+    run = p_teacher.add_run(clean_text(teacher_name))
     run.italic = True
     left_cell.add_paragraph("Supervising Officer's Signature: ____________________")
     right_cell = sig_row.cell(0, 1)
