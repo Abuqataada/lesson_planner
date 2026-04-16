@@ -213,35 +213,50 @@ async def form():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>AI Lesson Plan Generator</title>
         <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: #f0f2f5;
-                margin: 0;
-                padding: 2rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                min-height: 100vh;
+                padding: 2rem;
             }
+
             .container {
                 background: white;
                 padding: 2rem;
-                border-radius: 16px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                border-radius: 24px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
                 max-width: 500px;
                 width: 100%;
+                transition: transform 0.3s ease;
             }
+
             h1 {
                 text-align: center;
                 color: #1e3c72;
                 margin-bottom: 1.5rem;
+                font-size: 1.8rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
             }
+
             label {
                 display: block;
                 margin-top: 1rem;
                 font-weight: 600;
                 color: #333;
             }
+
             input {
                 width: 100%;
                 padding: 0.75rem;
@@ -249,34 +264,133 @@ async def form():
                 border: 1px solid #ccc;
                 border-radius: 8px;
                 font-size: 1rem;
-                box-sizing: border-box;
+                transition: border 0.2s;
             }
+
+            input:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            }
+
             button {
                 width: 100%;
                 padding: 0.75rem;
                 margin-top: 1.5rem;
-                background-color: #1e3c72;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
                 border-radius: 8px;
                 font-size: 1rem;
                 font-weight: bold;
                 cursor: pointer;
-                transition: background 0.3s;
+                transition: transform 0.2s, box-shadow 0.2s;
             }
+
             button:hover {
-                background-color: #0f2b4f;
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(102,126,234,0.4);
             }
-            .loading {
+
+            button:active {
+                transform: translateY(0);
+            }
+
+            /* Modern loading overlay */
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(8px);
                 display: none;
-                text-align: center;
-                margin-top: 1rem;
-                color: #1e3c72;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                animation: fadeIn 0.3s ease;
             }
+
+            .loading-card {
+                background: white;
+                padding: 2rem;
+                border-radius: 24px;
+                text-align: center;
+                max-width: 300px;
+                width: 90%;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            }
+
+            .spinner {
+                width: 60px;
+                height: 60px;
+                margin: 0 auto 1.5rem;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-right: 4px solid #764ba2;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            .loading-text {
+                font-size: 1.2rem;
+                color: #333;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+            }
+
+            .loading-dots {
+                display: flex;
+                justify-content: center;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+            }
+
+            .loading-dots span {
+                width: 8px;
+                height: 8px;
+                background-color: #667eea;
+                border-radius: 50%;
+                animation: bounce 1.4s infinite ease-in-out both;
+            }
+
+            .loading-dots span:nth-child(1) {
+                animation-delay: -0.32s;
+            }
+            .loading-dots span:nth-child(2) {
+                animation-delay: -0.16s;
+            }
+            .loading-dots span:nth-child(3) {
+                animation-delay: 0s;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            @keyframes bounce {
+                0%, 80%, 100% {
+                    transform: scale(0.6);
+                    opacity: 0.5;
+                }
+                40% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
             .error {
-                color: red;
+                color: #e74c3c;
                 margin-top: 1rem;
                 text-align: center;
+                font-size: 0.9rem;
             }
         </style>
     </head>
@@ -295,19 +409,32 @@ async def form():
 
             <button type="submit">✨ Generate Lesson Plan</button>
         </form>
-        <div class="loading" id="loading">⏳ Generating lesson plan... (may take 10-20 seconds)</div>
         <div class="error" id="error"></div>
+    </div>
+
+    <!-- Modern loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <div class="loading-text">Generating your lesson plan</div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.8rem; color: #666;">Using AI to create a custom plan...</p>
+        </div>
     </div>
 
     <script>
         const form = document.getElementById('lessonForm');
-        const loadingDiv = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            loadingDiv.style.display = 'block';
             errorDiv.textContent = '';
+            loadingOverlay.style.display = 'flex';
 
             const formData = new FormData(form);
             const payload = {
@@ -340,14 +467,14 @@ async def form():
             } catch (err) {
                 errorDiv.textContent = `Error: ${err.message}`;
             } finally {
-                loadingDiv.style.display = 'none';
+                loadingOverlay.style.display = 'none';
             }
         });
     </script>
     </body>
     </html>
     """)
-
+    
 @app.post("/generate")
 async def generate_plan(request: LessonPlanRequest):
     try:
