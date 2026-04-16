@@ -4,21 +4,16 @@ import json
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from datetime import datetime
 
-# Import your AI service (keep the same class as provided)
-from ai_analysis_service import AIAnalysisService  # rename your file to ai_analysis_service.py
+# Your AI service (keep as is)
+from ai_analysis_service import AIAnalysisService
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-
-# Initialize AI service
 ai_service = AIAnalysisService()
 
 class LessonPlanRequest(BaseModel):
@@ -26,6 +21,9 @@ class LessonPlanRequest(BaseModel):
     subject: str
     topic: str
 
+# ------------------------------------------------------------
+# Word document generator (unchanged)
+# ------------------------------------------------------------
 def set_landscape(doc):
     section = doc.sections[0]
     section.page_width = Inches(11)
@@ -51,19 +49,16 @@ def add_logo(doc, logo_paths):
     return False
 
 def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") -> bytes:
-    """Generate the Word document from AI‑generated plan data."""
     doc = Document()
     set_landscape(doc)
 
-    # Logo
     possible_logos = ["logo.png", "logo.jpg", "arndale_logo.png", "school_logo.jpg"]
     add_logo(doc, possible_logos)
 
-    # Title
     heading = doc.add_heading("Lesson Plan", level=1)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # ---------- 3‑column header table ----------
+    # 3‑column header table
     table_main = doc.add_table(rows=9, cols=3)
     table_main.style = 'Table Grid'
     table_main.columns[0].width = Inches(0.6)
@@ -124,11 +119,10 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
 
     doc.add_paragraph()
 
-    # ---------- Main development table ----------
+    # Main development table (6 columns)
     table_dev = doc.add_table(rows=3, cols=6)
     table_dev.style = 'Table Grid'
 
-    # Merge cells for rowspan
     prior_cell = table_dev.cell(0, 0)
     prior_cell.merge(table_dev.cell(1, 0))
     prior_cell.text = "Prior Knowledge"
@@ -159,7 +153,6 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     table_dev.cell(1, 4).text = "STUDENTS' ACTIVITIES"
     table_dev.cell(1, 4).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Populate content row
     table_dev.cell(2, 0).text = plan_data.get("prior_knowledge", "General knowledge from previous lessons.")
     table_dev.cell(2, 1).text = plan_data.get("warmup_activity", "Engaging starter to capture interest.")
     table_dev.cell(2, 2).text = plan_data.get("learning_note", "Core content with definitions and examples.")
@@ -169,7 +162,7 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
 
     doc.add_paragraph()
 
-    # ---------- Plenary / Homework / Flip Ticket ----------
+    # Plenary / Homework / Flip Ticket
     table_plenary = doc.add_table(rows=3, cols=2)
     table_plenary.style = 'Table Grid'
     plenary_data = [
@@ -183,7 +176,7 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
 
     doc.add_paragraph()
 
-    # ---------- Signature boxes ----------
+    # Signature boxes (side by side)
     sig_row = doc.add_table(rows=1, cols=2)
     sig_row.style = 'Table Grid'
     left_cell = sig_row.cell(0, 0)
@@ -201,15 +194,159 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
         "…………………………………………………………"
     )
 
-    # Save to bytes
     byte_io = io.BytesIO()
     doc.save(byte_io)
     byte_io.seek(0)
     return byte_io.getvalue()
 
+# ------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-async def form(request: Request):
-    return templates.TemplateResponse("form.html", {"request": request})
+async def form():
+    # Direct HTML string – no templates, no Jinja2
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AI Lesson Plan Generator</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #f0f2f5;
+                margin: 0;
+                padding: 2rem;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+            .container {
+                background: white;
+                padding: 2rem;
+                border-radius: 16px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                max-width: 500px;
+                width: 100%;
+            }
+            h1 {
+                text-align: center;
+                color: #1e3c72;
+                margin-bottom: 1.5rem;
+            }
+            label {
+                display: block;
+                margin-top: 1rem;
+                font-weight: 600;
+                color: #333;
+            }
+            input {
+                width: 100%;
+                padding: 0.75rem;
+                margin-top: 0.25rem;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                font-size: 1rem;
+                box-sizing: border-box;
+            }
+            button {
+                width: 100%;
+                padding: 0.75rem;
+                margin-top: 1.5rem;
+                background-color: #1e3c72;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            button:hover {
+                background-color: #0f2b4f;
+            }
+            .loading {
+                display: none;
+                text-align: center;
+                margin-top: 1rem;
+                color: #1e3c72;
+            }
+            .error {
+                color: red;
+                margin-top: 1rem;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+    <div class="container">
+        <h1>📘 AI Lesson Plan Generator</h1>
+        <form id="lessonForm">
+            <label for="class_name">Class Level</label>
+            <input type="text" id="class_name" name="class_name" placeholder="e.g., Year 7, Grade 5, JSS 1" required>
+
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" placeholder="e.g., Physics, Mathematics, English" required>
+
+            <label for="topic">Topic</label>
+            <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Forces, Fractions" required>
+
+            <button type="submit">✨ Generate Lesson Plan</button>
+        </form>
+        <div class="loading" id="loading">⏳ Generating lesson plan... (may take 10-20 seconds)</div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('lessonForm');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loadingDiv.style.display = 'block';
+            errorDiv.textContent = '';
+
+            const formData = new FormData(form);
+            const payload = {
+                class_name: formData.get('class_name'),
+                subject: formData.get('subject'),
+                topic: formData.get('topic')
+            };
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to generate plan');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Lesson_Plan_${payload.subject}_${payload.topic}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                errorDiv.textContent = `Error: ${err.message}`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        });
+    </script>
+    </body>
+    </html>
+    """)
 
 @app.post("/generate")
 async def generate_plan(request: LessonPlanRequest):
@@ -232,7 +369,6 @@ async def generate_plan(request: LessonPlanRequest):
         # Generate Word document
         doc_bytes = create_lesson_plan_doc(plan_data, teacher_name="ISAH YUSUF")
 
-        # Return as downloadable file
         filename = f"Lesson_Plan_{request.subject}_{request.topic}.docx"
         return Response(
             content=doc_bytes,
