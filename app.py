@@ -380,9 +380,9 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(
+        request,
         "form.html",
         {
-            "request": request,
             "subscription_plans": SUBSCRIPTION_PLANS,
             "payment_name": PAYMENT_NAME,
             "payment_account": PAYMENT_ACCOUNT,
@@ -395,9 +395,9 @@ async def home(request: Request):
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     return templates.TemplateResponse(
+        request,
         "admin.html",
         {
-            "request": request,
             "subscription_plans": SUBSCRIPTION_PLANS,
             "admin_password_hint": "Set ADMIN_PASSWORD in your environment to protect approvals.",
         },
