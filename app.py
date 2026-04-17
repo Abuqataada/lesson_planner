@@ -1,5 +1,4 @@
 import io
-import json
 import os
 import unicodedata
 import uuid
@@ -13,6 +12,8 @@ from docx.shared import Inches, Pt
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
+import psycopg
+from psycopg.rows import dict_row
 from pydantic import BaseModel
 
 from ai_analysis_service import AIAnalysisService
@@ -22,7 +23,10 @@ ai_service = AIAnalysisService()
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-SUBSCRIPTIONS_FILE = BASE_DIR / "subscriptions.json"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_CzyA6c9imSWL@ep-noisy-sun-a41ubng9-pooler.us-east-1.aws.neon.tech/lesson_planner?sslmode=require&channel_binding=require",
+)
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "omtech-admin")
 PAYMENT_NAME = "OMTECH EI LIMITED"
 PAYMENT_ACCOUNT = "7065894127"
@@ -59,7 +63,7 @@ class SubscriptionRequest(BaseModel):
     full_name: str
     email: str
     phone: str
-    plan_id: str = "monthly"
+    plan_id: str = "termly"
     payment_reference: str
 
 
@@ -67,20 +71,41 @@ def normalize_key(value: str) -> str:
     return (value or "").strip().lower()
 
 
+def get_db_connection():
+    conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    return conn
+
+
+def init_db() -> None:
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id TEXT PRIMARY KEY,
+                subscriber_key TEXT NOT NULL UNIQUE,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                plan_id TEXT NOT NULL,
+                payment_reference TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                approved_at TEXT,
+                rejected_at TEXT
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)")
+        conn.commit()
+
+
 def load_subscriptions() -> list[dict]:
-    if not SUBSCRIPTIONS_FILE.exists():
-        return []
-    try:
-        with SUBSCRIPTIONS_FILE.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        return data if isinstance(data, list) else []
-    except Exception:
-        return []
-
-
-def save_subscriptions(items: list[dict]) -> None:
-    with SUBSCRIPTIONS_FILE.open("w", encoding="utf-8") as handle:
-        json.dump(items, handle, indent=2)
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, subscriber_key, full_name, email, phone, plan_id, payment_reference, status, created_at, updated_at, approved_at, rejected_at FROM subscriptions ORDER BY created_at DESC"
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def subscription_key(record: dict) -> str:
@@ -92,38 +117,38 @@ def find_subscription(subscriber_key: str) -> Optional[dict]:
     if not key:
         return None
 
-    for item in load_subscriptions():
-        if normalize_key(item.get("subscriber_key", "")) == key:
-            return item
-        if subscription_key(item) == key:
-            return item
+    with get_db_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT id, subscriber_key, full_name, email, phone, plan_id, payment_reference, status, created_at, updated_at, approved_at, rejected_at
+            FROM subscriptions
+            WHERE subscriber_key = %s OR lower(email) = %s OR lower(phone) = %s
+            LIMIT 1
+            """,
+            (key, key, key),
+        ).fetchone()
+    if row:
+        return dict(row)
     return None
 
 
 def upsert_subscription(payload: SubscriptionRequest) -> dict:
-    items = load_subscriptions()
     key = normalize_key(payload.email or payload.phone)
     now = datetime.now().isoformat()
+    existing = find_subscription(key)
 
-    existing_index = None
-    for index, item in enumerate(items):
-        if normalize_key(item.get("subscriber_key", "")) == key or subscription_key(item) == key:
-            existing_index = index
-            break
-
-    if existing_index is not None:
-        existing = items[existing_index]
-        record_id = existing.get("id", str(uuid.uuid4()))
-        created_at = existing.get("created_at", now)
+    if existing:
         status = "approved" if existing.get("status") == "approved" else "pending"
         approved_at = existing.get("approved_at") if status == "approved" else None
-        rejected_at = None if status == "pending" else existing.get("rejected_at")
+        rejected_at = None
+        record_id = existing.get("id", str(uuid.uuid4()))
+        created_at = existing.get("created_at", now)
     else:
-        record_id = str(uuid.uuid4())
-        created_at = now
         status = "pending"
         approved_at = None
         rejected_at = None
+        record_id = str(uuid.uuid4())
+        created_at = now
 
     record = {
         "id": record_id,
@@ -140,12 +165,41 @@ def upsert_subscription(payload: SubscriptionRequest) -> dict:
         "rejected_at": rejected_at,
     }
 
-    if existing_index is None:
-        items.append(record)
-    else:
-        items[existing_index] = record
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO subscriptions (
+                id, subscriber_key, full_name, email, phone, plan_id,
+                payment_reference, status, created_at, updated_at, approved_at, rejected_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT(subscriber_key) DO UPDATE SET
+                full_name=excluded.full_name,
+                email=excluded.email,
+                phone=excluded.phone,
+                plan_id=excluded.plan_id,
+                payment_reference=excluded.payment_reference,
+                status=excluded.status,
+                updated_at=excluded.updated_at,
+                approved_at=excluded.approved_at,
+                rejected_at=excluded.rejected_at
+            """,
+            (
+                record["id"],
+                record["subscriber_key"],
+                record["full_name"],
+                record["email"],
+                record["phone"],
+                record["plan_id"],
+                record["payment_reference"],
+                record["status"],
+                record["created_at"],
+                record["updated_at"],
+                record["approved_at"],
+                record["rejected_at"],
+            ),
+        )
+        conn.commit()
 
-    save_subscriptions(items)
     return record
 
 
@@ -155,21 +209,42 @@ def admin_required(admin_password: str) -> None:
 
 
 def set_subscription_status(subscription_id: str, status: str) -> dict:
-    items = load_subscriptions()
     now = datetime.now().isoformat()
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM subscriptions WHERE id = %s",
+            (subscription_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Subscription not found")
 
-    for item in items:
-        if item.get("id") == subscription_id:
-            item["status"] = status
-            item["updated_at"] = now
-            if status == "approved":
-                item["approved_at"] = now
-            if status == "rejected":
-                item["rejected_at"] = now
-            save_subscriptions(items)
-            return item
+        item = dict(row)
+        item["status"] = status
+        item["updated_at"] = now
+        if status == "approved":
+            item["approved_at"] = now
+        if status == "rejected":
+            item["rejected_at"] = now
 
-    raise HTTPException(status_code=404, detail="Subscription not found")
+        conn.execute(
+            """
+            UPDATE subscriptions
+            SET status = %s, updated_at = %s, approved_at = %s, rejected_at = %s
+            WHERE id = %s
+            """,
+            (
+                item["status"],
+                item["updated_at"],
+                item.get("approved_at"),
+                item.get("rejected_at"),
+                subscription_id,
+            ),
+        )
+        conn.commit()
+        return item
+
+
+init_db()
 
 
 def set_landscape(doc: Document) -> None:
