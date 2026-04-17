@@ -6,16 +6,18 @@
     <title>AI Lesson Plan Generator</title>
     <style>
         :root {
-            --bg: #08111f;
-            --panel: rgba(12, 20, 35, 0.86);
-            --panel-strong: #0f1d33;
-            --text: #f5f7fb;
-            --muted: #a9b5c8;
-            --line: rgba(255, 255, 255, 0.09);
-            --accent: #75a7ff;
-            --accent-2: #7cf0c5;
-            --danger: #ff7f7f;
-            --warning: #ffd166;
+            --bg: #f5f8ff;
+            --panel: rgba(255, 255, 255, 0.92);
+            --panel-strong: #ffffff;
+            --text: #14213d;
+            --muted: #5b6b84;
+            --line: rgba(20, 33, 61, 0.10);
+            --accent: #2563eb;
+            --accent-2: #14b8a6;
+            --accent-3: #f97316;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --shadow: 0 18px 55px rgba(37, 99, 235, 0.12);
         }
 
         * {
@@ -29,15 +31,15 @@
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text);
             background:
-                radial-gradient(circle at top left, rgba(117, 167, 255, 0.24), transparent 30%),
-                radial-gradient(circle at top right, rgba(124, 240, 197, 0.14), transparent 28%),
-                linear-gradient(160deg, #050a14 0%, #101a2b 48%, #071120 100%);
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 26%),
+                radial-gradient(circle at top right, rgba(20, 184, 166, 0.14), transparent 22%),
+                linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
         }
 
         .shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
+            grid-template-columns: 1.1fr 0.9fr;
             gap: 1.5rem;
             padding: 1.5rem;
             max-width: 1400px;
@@ -45,53 +47,74 @@
         }
 
         .hero, .panel {
+            background: var(--panel);
             border: 1px solid var(--line);
             border-radius: 28px;
-            background: var(--panel);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
         }
 
         .hero {
-            padding: 2rem;
+            padding: 2.25rem;
+            position: relative;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            position: relative;
-            overflow: hidden;
         }
 
+        .hero::before,
         .hero::after {
             content: "";
             position: absolute;
-            inset: auto -12% -22% auto;
-            width: 280px;
-            height: 280px;
-            background: radial-gradient(circle, rgba(124, 240, 197, 0.18), transparent 65%);
             border-radius: 50%;
             pointer-events: none;
         }
 
+        .hero::before {
+            width: 260px;
+            height: 260px;
+            right: -70px;
+            top: -70px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 68%);
+        }
+
+        .hero::after {
+            width: 220px;
+            height: 220px;
+            left: -80px;
+            bottom: -80px;
+            background: radial-gradient(circle, rgba(20, 184, 166, 0.15), transparent 68%);
+        }
+
         .eyebrow {
-            color: var(--accent-2);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.12);
+            border-radius: 999px;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.74rem;
-            font-weight: 700;
         }
 
         h1 {
-            font-size: clamp(2.3rem, 4vw, 4.5rem);
+            font-size: clamp(2.3rem, 4vw, 4.8rem);
             line-height: 0.95;
-            margin: 0.75rem 0 1rem;
+            margin: 1rem 0 1rem;
             max-width: 11ch;
+            letter-spacing: -0.03em;
         }
 
         .lede {
-            max-width: 60ch;
+            max-width: 64ch;
             color: var(--muted);
-            font-size: 1.02rem;
-            line-height: 1.7;
+            font-size: 1.03rem;
+            line-height: 1.75;
         }
 
         .stats {
@@ -104,20 +127,19 @@
         .stat {
             padding: 1rem;
             border-radius: 20px;
-            background: rgba(255, 255, 255, 0.04);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 245, 255, 0.95));
             border: 1px solid var(--line);
         }
 
         .stat strong {
             display: block;
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 0.35rem;
         }
 
-        .stat span {
+        .stat span, .subtle, .tiny {
             color: var(--muted);
-            font-size: 0.92rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .panel {
@@ -126,13 +148,7 @@
 
         .panel h2, .section-title {
             font-size: 1.2rem;
-            margin-bottom: 0.7rem;
-        }
-
-        .subtle {
-            color: var(--muted);
-            line-height: 1.6;
-            font-size: 0.95rem;
+            margin-bottom: 0.65rem;
         }
 
         .form-grid {
@@ -144,9 +160,9 @@
         label {
             display: block;
             font-size: 0.92rem;
-            color: #dce6f7;
+            color: #20304d;
             margin-bottom: 0.35rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         input, select, textarea, button {
@@ -155,21 +171,22 @@
 
         input, select, textarea {
             width: 100%;
-            background: rgba(255, 255, 255, 0.04);
+            background: #fff;
             border: 1px solid var(--line);
-            border-radius: 14px;
+            border-radius: 16px;
             color: var(--text);
             padding: 0.95rem 1rem;
             outline: none;
-            transition: border-color 0.2s ease, transform 0.2s ease;
+            transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
         }
 
         input::placeholder, textarea::placeholder {
-            color: #93a3bb;
+            color: #8a97ae;
         }
 
         input:focus, select:focus, textarea:focus {
-            border-color: rgba(117, 167, 255, 0.75);
+            border-color: rgba(37, 99, 235, 0.6);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
             transform: translateY(-1px);
         }
 
@@ -187,9 +204,9 @@
         .btn {
             border: none;
             cursor: pointer;
-            border-radius: 14px;
+            border-radius: 16px;
             padding: 0.95rem 1.2rem;
-            font-weight: 700;
+            font-weight: 800;
             transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
         }
 
@@ -198,39 +215,42 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #9a7bff);
+            background: linear-gradient(135deg, var(--accent), #6d28d9);
             color: white;
-            box-shadow: 0 12px 30px rgba(117, 167, 255, 0.26);
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
+            background: linear-gradient(135deg, #ffffff, #eef4ff);
             color: var(--text);
             border: 1px solid var(--line);
         }
 
         .status {
             margin-top: 1rem;
-            padding: 0.9rem 1rem;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 0.95rem 1rem;
+            border-radius: 16px;
+            background: #ffffff;
             border: 1px solid var(--line);
             color: var(--muted);
         }
 
         .status.ok {
-            border-color: rgba(124, 240, 197, 0.4);
-            color: #dbfff3;
+            border-color: rgba(20, 184, 166, 0.25);
+            color: #0f766e;
+            background: rgba(20, 184, 166, 0.06);
         }
 
         .status.warn {
-            border-color: rgba(255, 209, 102, 0.45);
-            color: #fff3cf;
+            border-color: rgba(245, 158, 11, 0.25);
+            color: #9a5b00;
+            background: rgba(245, 158, 11, 0.08);
         }
 
         .status.err {
-            border-color: rgba(255, 127, 127, 0.4);
-            color: #ffd6d6;
+            border-color: rgba(220, 38, 38, 0.25);
+            color: #b91c1c;
+            background: rgba(220, 38, 38, 0.06);
         }
 
         .plans {
@@ -241,8 +261,8 @@
 
         .plan {
             padding: 1rem;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff, #f6f9ff);
             border: 1px solid var(--line);
         }
 
@@ -261,21 +281,21 @@
             padding: 0.35rem 0.65rem;
             border-radius: 999px;
             font-size: 0.78rem;
-            font-weight: 700;
-            background: rgba(117, 167, 255, 0.13);
-            color: #cbe0ff;
+            font-weight: 800;
+            background: rgba(37, 99, 235, 0.10);
+            color: #1d4ed8;
         }
 
         .pill.best {
-            background: rgba(124, 240, 197, 0.13);
-            color: #b8ffea;
+            background: rgba(20, 184, 166, 0.12);
+            color: #0f766e;
         }
 
         .payment-box {
             margin-top: 1.2rem;
             padding: 1rem;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
             border: 1px solid var(--line);
         }
 
@@ -301,7 +321,7 @@
         .modal {
             position: fixed;
             inset: 0;
-            background: rgba(3, 6, 11, 0.7);
+            background: rgba(255, 255, 255, 0.70);
             backdrop-filter: blur(14px);
             display: none;
             align-items: center;
@@ -320,8 +340,8 @@
             overflow: auto;
             border-radius: 28px;
             border: 1px solid var(--line);
-            background: rgba(7, 13, 24, 0.96);
-            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.55);
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 30px 100px rgba(37, 99, 235, 0.18);
             padding: 1.25rem;
         }
 
@@ -334,8 +354,8 @@
         }
 
         .modal-close {
-            background: transparent;
-            color: var(--muted);
+            background: #ffffff;
+            color: var(--text);
             border: 1px solid var(--line);
             border-radius: 999px;
             width: 42px;
@@ -350,30 +370,20 @@
         }
 
         .lock-note {
-            padding: 0.85rem 1rem;
+            padding: 0.95rem 1rem;
             border-left: 4px solid var(--warning);
-            background: rgba(255, 209, 102, 0.08);
-            border-radius: 14px;
-            color: #ffefc0;
+            background: rgba(245, 158, 11, 0.08);
+            border-radius: 16px;
+            color: #8a4f00;
             margin: 1rem 0;
-            line-height: 1.6;
-        }
-
-        .tiny {
-            color: var(--muted);
-            font-size: 0.88rem;
-            line-height: 1.55;
-        }
-
-        .hidden {
-            display: none !important;
+            line-height: 1.65;
         }
 
         .spinner {
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-top-color: white;
             display: inline-block;
             animation: spin 0.75s linear infinite;
@@ -386,13 +396,22 @@
             right: 1rem;
             bottom: 1rem;
             z-index: 2;
-            color: var(--muted);
+            color: var(--accent);
             text-decoration: none;
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.92);
             border: 1px solid var(--line);
             padding: 0.7rem 0.9rem;
             border-radius: 999px;
             font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-2);
         }
 
         @keyframes spin {
@@ -401,11 +420,7 @@
         }
 
         @media (max-width: 1000px) {
-            .shell, .modal-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats {
+            .shell, .modal-grid, .stats {
                 grid-template-columns: 1fr;
             }
         }
@@ -416,26 +431,12 @@
         <section class="hero">
             <div>
                 <div class="eyebrow">Monetized AI Lesson Planner</div>
-                <h1>Generate polished lesson plans only for approved subscribers.</h1>
+                <h1>Bright, fast, and gated for approved subscribers.</h1>
                 <p class="lede">
-                    This app uses AI API quota every time a lesson plan is generated, so access is gated behind a subscription and manual approval. Once approved, subscribers can generate lesson plans instantly from this same interface.
+                    This app uses AI API quota every time a lesson plan is generated, so access is protected by a subscription and manual approval. Once approved, subscribers can generate lesson plans instantly from this same interface.
                 </p>
             </div>
 
-            <div class="stats">
-                <div class="stat">
-                    <strong>Subscription Gate</strong>
-                    <span>Users submit payment details, then the admin approves access manually.</span>
-                </div>
-                <div class="stat">
-                    <strong>Quota Protection</strong>
-                    <span>Every generation request is blocked until a subscriber is approved.</span>
-                </div>
-                <div class="stat">
-                    <strong>Simple Admin Control</strong>
-                    <span>Review pending subscribers and approve or reject with one click.</span>
-                </div>
-            </div>
         </section>
 
         <section class="panel">
@@ -557,7 +558,6 @@
     </div>
 
     <script>
-        const subscriptionPlans = {{ subscription_plans | tojson }};
         const lessonForm = document.getElementById('lessonForm');
         const accessStatus = document.getElementById('accessStatus');
         const errorDiv = document.getElementById('error');
