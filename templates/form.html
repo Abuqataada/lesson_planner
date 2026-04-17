@@ -5,264 +5,733 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Lesson Plan Generator</title>
     <style>
+        :root {
+            --bg: #08111f;
+            --panel: rgba(12, 20, 35, 0.86);
+            --panel-strong: #0f1d33;
+            --text: #f5f7fb;
+            --muted: #a9b5c8;
+            --line: rgba(255, 255, 255, 0.09);
+            --accent: #75a7ff;
+            --accent-2: #7cf0c5;
+            --danger: #ff7f7f;
+            --warning: #ffd166;
+        }
+
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(117, 167, 255, 0.24), transparent 30%),
+                radial-gradient(circle at top right, rgba(124, 240, 197, 0.14), transparent 28%),
+                linear-gradient(160deg, #050a14 0%, #101a2b 48%, #071120 100%);
         }
 
-        .container {
-            background: white;
+        .shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .hero, .panel {
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            background: var(--panel);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero {
             padding: 2rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            max-width: 500px;
-            width: 100%;
-            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: auto -12% -22% auto;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(124, 240, 197, 0.18), transparent 65%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            color: var(--accent-2);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.74rem;
+            font-weight: 700;
         }
 
         h1 {
-            text-align: center;
-            color: #1e3c72;
-            margin-bottom: 1.5rem;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            font-size: clamp(2.3rem, 4vw, 4.5rem);
+            line-height: 0.95;
+            margin: 0.75rem 0 1rem;
+            max-width: 11ch;
+        }
+
+        .lede {
+            max-width: 60ch;
+            color: var(--muted);
+            font-size: 1.02rem;
+            line-height: 1.7;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat {
+            padding: 1rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .stat span {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .panel {
+            padding: 1.5rem;
+        }
+
+        .panel h2, .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .subtle {
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 0.9rem;
+            margin-top: 1.2rem;
         }
 
         label {
             display: block;
-            margin-top: 1rem;
+            font-size: 0.92rem;
+            color: #dce6f7;
+            margin-bottom: 0.35rem;
             font-weight: 600;
-            color: #333;
         }
 
-        input {
+        input, select, textarea, button {
+            font: inherit;
+        }
+
+        input, select, textarea {
             width: 100%;
-            padding: 0.75rem;
-            margin-top: 0.25rem;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border 0.2s;
-        }
-
-        input:focus {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--text);
+            padding: 0.95rem 1rem;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            transition: border-color 0.2s ease, transform 0.2s ease;
         }
 
-        button {
-            width: 100%;
-            padding: 0.75rem;
-            margin-top: 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+        input::placeholder, textarea::placeholder {
+            color: #93a3bb;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        input:focus, select:focus, textarea:focus {
+            border-color: rgba(117, 167, 255, 0.75);
+            transform: translateY(-1px);
         }
 
-        button:active {
-            transform: translateY(0);
+        textarea {
+            min-height: 110px;
+            resize: vertical;
         }
 
-        /* Modern loading overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .loading-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 24px;
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 1.5rem;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-right: 4px solid #764ba2;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .loading-dots {
+        .actions {
             display: flex;
-            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 14px;
+            padding: 0.95rem 1.2rem;
+            font-weight: 700;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #9a7bff);
+            color: white;
+            box-shadow: 0 12px 30px rgba(117, 167, 255, 0.26);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+
+        .status.ok {
+            border-color: rgba(124, 240, 197, 0.4);
+            color: #dbfff3;
+        }
+
+        .status.warn {
+            border-color: rgba(255, 209, 102, 0.45);
+            color: #fff3cf;
+        }
+
+        .status.err {
+            border-color: rgba(255, 127, 127, 0.4);
+            color: #ffd6d6;
+        }
+
+        .plans {
+            display: grid;
+            gap: 0.9rem;
+            margin-top: 1.2rem;
+        }
+
+        .plan {
+            padding: 1rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+        }
+
+        .plan-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 0.55rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            background: rgba(117, 167, 255, 0.13);
+            color: #cbe0ff;
+        }
+
+        .pill.best {
+            background: rgba(124, 240, 197, 0.13);
+            color: #b8ffea;
+        }
+
+        .payment-box {
+            margin-top: 1.2rem;
+            padding: 1rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+        }
+
+        .payment-box strong {
+            display: block;
+            margin-top: 0.3rem;
+            font-size: 1.05rem;
+        }
+
+        .payment-grid {
+            display: grid;
             gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .loading-dots span {
-            width: 8px;
-            height: 8px;
-            background-color: #667eea;
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-
-        .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-        .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-        .loading-dots span:nth-child(3) {
-            animation-delay: 0s;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes bounce {
-            0%, 80%, 100% {
-                transform: scale(0.6);
-                opacity: 0.5;
-            }
-            40% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            margin-top: 0.8rem;
+            color: var(--muted);
         }
 
         .error {
-            color: #e74c3c;
-            margin-top: 1rem;
-            text-align: center;
+            color: var(--danger);
+            margin-top: 0.85rem;
+            min-height: 1.2rem;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 6, 11, 0.7);
+            backdrop-filter: blur(14px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(1120px, 100%);
+            max-height: 92vh;
+            overflow: auto;
+            border-radius: 28px;
+            border: 1px solid var(--line);
+            background: rgba(7, 13, 24, 0.96);
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.55);
+            padding: 1.25rem;
+        }
+
+        .modal-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .lock-note {
+            padding: 0.85rem 1rem;
+            border-left: 4px solid var(--warning);
+            background: rgba(255, 209, 102, 0.08);
+            border-radius: 14px;
+            color: #ffefc0;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+
+        .tiny {
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-top-color: white;
+            display: inline-block;
+            animation: spin 0.75s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .admin-link {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 2;
+            color: var(--muted);
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--line);
+            padding: 0.7rem 0.9rem;
+            border-radius: 999px;
             font-size: 0.9rem;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1000px) {
+            .shell, .modal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>📘 AI Lesson Plan Generator</h1>
-    <form id="lessonForm">
-        <label for="class_name">Class Level</label>
-        <input type="text" id="class_name" name="class_name" placeholder="e.g., Year 7, Grade 5, JSS 1" required>
+    <div class="shell">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">Monetized AI Lesson Planner</div>
+                <h1>Generate polished lesson plans only for approved subscribers.</h1>
+                <p class="lede">
+                    This app uses AI API quota every time a lesson plan is generated, so access is gated behind a subscription and manual approval. Once approved, subscribers can generate lesson plans instantly from this same interface.
+                </p>
+            </div>
 
-        <label for="subject">Subject</label>
-        <input type="text" id="subject" name="subject" placeholder="e.g., Physics, Mathematics, English" required>
+            <div class="stats">
+                <div class="stat">
+                    <strong>Subscription Gate</strong>
+                    <span>Users submit payment details, then the admin approves access manually.</span>
+                </div>
+                <div class="stat">
+                    <strong>Quota Protection</strong>
+                    <span>Every generation request is blocked until a subscriber is approved.</span>
+                </div>
+                <div class="stat">
+                    <strong>Simple Admin Control</strong>
+                    <span>Review pending subscribers and approve or reject with one click.</span>
+                </div>
+            </div>
+        </section>
 
-        <label for="topic">Topic</label>
-        <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Forces, Fractions" required>
+        <section class="panel">
+            <h2>Lesson Plan Generator</h2>
+            <p class="subtle">Enter your details below. The app stays locked until your subscription has been approved.</p>
 
-        <button type="submit">✨ Generate Lesson Plan</button>
-    </form>
-    <div class="error" id="error"></div>
-</div>
+            <div id="accessStatus" class="status warn">Checking subscription status...</div>
 
-<!-- Modern loading overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-card">
-        <div class="spinner"></div>
-        <div class="loading-text">Generating your lesson plan</div>
-        <div class="loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        <p style="margin-top: 1rem; font-size: 0.8rem; color: #666;">Using AI to create a custom plan...</p>
+            <form id="lessonForm" class="form-grid">
+                <div>
+                    <label for="class_name">Class Level</label>
+                    <input type="text" id="class_name" name="class_name" placeholder="e.g., Year 7, Grade 5, JSS 1" required>
+                </div>
+
+                <div>
+                    <label for="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" placeholder="e.g., Physics, Mathematics, English" required>
+                </div>
+
+                <div>
+                    <label for="topic">Topic</label>
+                    <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Fractions" required>
+                </div>
+
+                <div class="actions">
+                    <button id="generateBtn" class="btn btn-primary" type="submit" disabled>Generate Lesson Plan</button>
+                    <button id="openSubscriptionBtn" class="btn btn-secondary" type="button">Subscribe / Unlock Access</button>
+                </div>
+            </form>
+
+            <div class="error" id="error"></div>
+        </section>
     </div>
-</div>
 
-<script>
-    const form = document.getElementById('lessonForm');
-    const errorDiv = document.getElementById('error');
-    const loadingOverlay = document.getElementById('loadingOverlay');
+    <a class="admin-link" href="{{ admin_path }}">Admin dashboard</a>
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorDiv.textContent = '';
-        loadingOverlay.style.display = 'flex';
+    <div class="modal" id="subscriptionModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-top">
+                <div>
+                    <div class="eyebrow">Subscription Required</div>
+                    <h2 style="margin-top:0.35rem;">AI quota usage makes this a paid product</h2>
+                    <p class="subtle" style="margin-top:0.5rem;">
+                        Submit your payment reference below. The admin will verify the payment and manually approve your account before access is enabled.
+                    </p>
+                </div>
+                <button class="modal-close" id="closeModalBtn" type="button">X</button>
+            </div>
 
-        const formData = new FormData(form);
-        const payload = {
-            class_name: formData.get('class_name'),
-            subject: formData.get('subject'),
-            topic: formData.get('topic')
-        };
+            <div class="lock-note">
+                Subscription is required because every lesson plan uses AI API quota. Termly access is <strong>NGN 2,000</strong>.
+                Payment account: <strong>{{ payment_name }}</strong>, <strong>{{ payment_account }}</strong> on <strong>{{ payment_bank }}</strong>.
+            </div>
 
-        try {
-            const response = await fetch('/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            <div class="modal-grid">
+                <div>
+                    <h3 class="section-title">Recommended plans</h3>
+                    <div class="plans">
+                        {% for plan in subscription_plans %}
+                        <div class="plan">
+                            <div class="plan-head">
+                                <strong>{{ plan.name }}</strong>
+                                <span class="pill {% if plan.badge == 'Best Value' %}best{% endif %}">{{ plan.badge }}</span>
+                            </div>
+                            <div style="font-size:1.45rem; font-weight:800;">{{ plan.price }} <span style="font-size:0.92rem; color:var(--muted); font-weight:600;">{{ plan.billing }}</span></div>
+                            <p class="tiny" style="margin-top:0.45rem;">{{ plan.description }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="payment-box">
+                        <h3 class="section-title">Pay to</h3>
+                        <strong>{{ payment_name }}</strong>
+                        <div class="payment-grid">
+                            <div>Account number: {{ payment_account }}</div>
+                            <div>Bank: {{ payment_bank }}</div>
+                            <div>Approval: Manual review by admin after payment confirmation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="section-title">Submit payment details</h3>
+                    <form id="subscriptionForm" class="form-grid" style="margin-top:0.8rem;">
+                        <div>
+                            <label for="full_name">Full name</label>
+                            <input id="full_name" name="full_name" placeholder="Your full name" required>
+                        </div>
+                        <div>
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" placeholder="you@example.com" required>
+                        </div>
+                        <div>
+                            <label for="phone">Phone number</label>
+                            <input id="phone" name="phone" placeholder="080..." required>
+                        </div>
+                        <div>
+                            <label for="plan_id">Choose plan</label>
+                            <select id="plan_id" name="plan_id">
+                                {% for plan in subscription_plans %}
+                                <option value="{{ plan.id }}">{{ plan.name }} - {{ plan.price }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="payment_reference">Payment reference / note</label>
+                            <textarea id="payment_reference" name="payment_reference" placeholder="Enter your bank transfer reference or payment note" required></textarea>
+                        </div>
+                        <div class="actions">
+                            <button id="submitSubscriptionBtn" class="btn btn-primary" type="submit">Submit for approval</button>
+                            <button class="btn btn-secondary" id="refreshStatusBtn" type="button">Check status</button>
+                        </div>
+                    </form>
+                    <div class="status" id="subscriptionStatus">Your account is locked until the admin approves your subscription.</div>
+                    <div class="error" id="subscriptionError"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const subscriptionPlans = {{ subscription_plans | tojson }};
+        const lessonForm = document.getElementById('lessonForm');
+        const accessStatus = document.getElementById('accessStatus');
+        const errorDiv = document.getElementById('error');
+        const generateBtn = document.getElementById('generateBtn');
+        const modal = document.getElementById('subscriptionModal');
+        const openSubscriptionBtn = document.getElementById('openSubscriptionBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const subscriptionForm = document.getElementById('subscriptionForm');
+        const subscriptionStatus = document.getElementById('subscriptionStatus');
+        const subscriptionError = document.getElementById('subscriptionError');
+        const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+        const submitSubscriptionBtn = document.getElementById('submitSubscriptionBtn');
+
+        const subscriberKeyStorage = 'lesson_planner_subscriber_key';
+
+        function setLocked(locked) {
+            lessonForm.querySelectorAll('input, select, button').forEach((el) => {
+                if (el.id !== 'openSubscriptionBtn') {
+                    el.disabled = locked && el !== generateBtn;
+                }
             });
+            generateBtn.disabled = locked;
+        }
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || 'Failed to generate plan');
+        function showModal() {
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideModal() {
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function setStatus(kind, message) {
+            accessStatus.className = `status ${kind}`;
+            accessStatus.textContent = message;
+        }
+
+        async function fetchSubscriptionStatus() {
+            const subscriberKey = localStorage.getItem(subscriberKeyStorage);
+            if (!subscriberKey) {
+                setLocked(true);
+                setStatus('warn', 'No approved subscription found. Subscribe to unlock access.');
+                showModal();
+                return;
             }
 
-            // Download the file
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Lesson_Plan_${payload.subject}_${payload.topic}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (err) {
-            errorDiv.textContent = `Error: ${err.message}`;
-        } finally {
-            loadingOverlay.style.display = 'none';
+            try {
+                const response = await fetch(`/api/subscription-status?subscriber_key=${encodeURIComponent(subscriberKey)}`);
+                const data = await response.json();
+                if (data.status === 'approved') {
+                    setLocked(false);
+                    setStatus('ok', 'Access approved. You can generate lesson plans now.');
+                    hideModal();
+                } else if (data.status === 'pending') {
+                    setLocked(true);
+                    setStatus('warn', 'Subscription is pending admin approval.');
+                    showModal();
+                } else {
+                    setLocked(true);
+                    setStatus('warn', 'No active subscription was found. Please subscribe to continue.');
+                    showModal();
+                }
+            } catch (err) {
+                setLocked(true);
+                setStatus('err', 'Could not verify subscription status.');
+                showModal();
+            }
         }
-    });
-</script>
+
+        openSubscriptionBtn.addEventListener('click', () => showModal());
+        closeModalBtn.addEventListener('click', () => hideModal());
+        refreshStatusBtn.addEventListener('click', fetchSubscriptionStatus);
+
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideModal();
+            }
+        });
+
+        subscriptionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            subscriptionError.textContent = '';
+            submitSubscriptionBtn.disabled = true;
+            submitSubscriptionBtn.innerHTML = '<span class="spinner"></span>Submitting...';
+
+            const payload = {
+                full_name: document.getElementById('full_name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                plan_id: document.getElementById('plan_id').value,
+                payment_reference: document.getElementById('payment_reference').value.trim(),
+            };
+
+            try {
+                const response = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                const subscriberKey = (payload.email || payload.phone).toLowerCase();
+                localStorage.setItem(subscriberKeyStorage, subscriberKey);
+                subscriptionStatus.className = 'status warn';
+                subscriptionStatus.textContent = `${data.message} Your access will unlock after approval.`;
+                setLocked(true);
+                showModal();
+                await fetchSubscriptionStatus();
+            } catch (err) {
+                subscriptionError.textContent = err.message || 'Could not submit subscription.';
+            } finally {
+                submitSubscriptionBtn.disabled = false;
+                submitSubscriptionBtn.textContent = 'Submit for approval';
+            }
+        });
+
+        lessonForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.textContent = '';
+
+            const subscriberKey = localStorage.getItem(subscriberKeyStorage);
+            if (!subscriberKey) {
+                setStatus('warn', 'Please subscribe first to unlock access.');
+                showModal();
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+
+            const formData = new FormData(lessonForm);
+            const payload = {
+                class_name: formData.get('class_name'),
+                subject: formData.get('subject'),
+                topic: formData.get('topic'),
+                subscriber_key: subscriberKey,
+            };
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const message = await response.text();
+                    throw new Error(message || 'Failed to generate plan');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Lesson_Plan_${payload.subject}_${payload.topic}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                errorDiv.textContent = err.message || 'Failed to generate lesson plan.';
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Lesson Plan';
+            }
+        });
+
+        fetchSubscriptionStatus();
+    </script>
 </body>
 </html>

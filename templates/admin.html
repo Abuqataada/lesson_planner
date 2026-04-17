@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        :root {
+            --bg: #08111f;
+            --panel: rgba(12, 20, 35, 0.86);
+            --text: #f5f7fb;
+            --muted: #a9b5c8;
+            --line: rgba(255, 255, 255, 0.09);
+            --accent: #75a7ff;
+            --good: #7cf0c5;
+            --bad: #ff7f7f;
+            --warn: #ffd166;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(117, 167, 255, 0.2), transparent 30%),
+                linear-gradient(160deg, #050a14 0%, #101a2b 48%, #071120 100%);
+            padding: 1.5rem;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            padding: 1.25rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            margin-bottom: 0.5rem;
+        }
+
+        .muted {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.8rem;
+            margin: 1.25rem 0;
+        }
+
+        input, button {
+            font: inherit;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--text);
+            padding: 0.95rem 1rem;
+            outline: none;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 14px;
+            padding: 0.95rem 1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #9a7bff);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .metrics {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 1rem;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 1.6rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1100px;
+        }
+
+        th, td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+            font-size: 0.93rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: #d9e5f9;
+        }
+
+        .status {
+            display: inline-flex;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .approved { background: rgba(124, 240, 197, 0.14); color: #bbffe8; }
+        .pending { background: rgba(255, 209, 102, 0.14); color: #ffe8a8; }
+        .rejected { background: rgba(255, 127, 127, 0.14); color: #ffc1c1; }
+
+        .row-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .small {
+            padding: 0.6rem 0.85rem;
+            font-size: 0.86rem;
+        }
+
+        .error {
+            margin-top: 0.9rem;
+            color: var(--bad);
+        }
+
+        .success {
+            margin-top: 0.9rem;
+            color: var(--good);
+        }
+
+        @media (max-width: 900px) {
+            .toolbar, .metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="panel">
+            <h1>Subscription Approval Dashboard</h1>
+            <p class="muted">
+                Review subscription requests, approve manual access, and keep the lesson planner locked until payment is verified.
+            </p>
+
+            <div class="toolbar">
+                <input id="adminPassword" type="password" placeholder="Admin password">
+                <button class="btn btn-primary" id="loadBtn" type="button">Load requests</button>
+                <button class="btn btn-secondary" id="refreshBtn" type="button">Refresh</button>
+            </div>
+
+            <div class="grid metrics">
+                <div class="metric"><strong id="totalCount">0</strong><span class="muted">Total requests</span></div>
+                <div class="metric"><strong id="pendingCount">0</strong><span class="muted">Pending approval</span></div>
+                <div class="metric"><strong id="approvedCount">0</strong><span class="muted">Approved access</span></div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Plan</th>
+                            <th>Payment Ref</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows">
+                        <tr>
+                            <td colspan="7" class="muted">Enter the admin password and load subscription requests.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="message" class="error"></div>
+        </section>
+    </div>
+
+    <script>
+        const rows = document.getElementById('rows');
+        const message = document.getElementById('message');
+        const totalCount = document.getElementById('totalCount');
+        const pendingCount = document.getElementById('pendingCount');
+        const approvedCount = document.getElementById('approvedCount');
+        const adminPassword = document.getElementById('adminPassword');
+        const loadBtn = document.getElementById('loadBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        function statusClass(value) {
+            return value === 'approved' ? 'approved' : value === 'rejected' ? 'rejected' : 'pending';
+        }
+
+        async function api(path, options = {}) {
+            const headers = Object.assign({}, options.headers || {}, {
+                'X-Admin-Password': adminPassword.value.trim(),
+            });
+            return fetch(path, { ...options, headers });
+        }
+
+        function render(items) {
+            totalCount.textContent = items.length;
+            pendingCount.textContent = items.filter(item => item.status === 'pending').length;
+            approvedCount.textContent = items.filter(item => item.status === 'approved').length;
+
+            if (!items.length) {
+                rows.innerHTML = '<tr><td colspan="7" class="muted">No subscription requests yet.</td></tr>';
+                return;
+            }
+
+            rows.innerHTML = items.map(item => `
+                <tr>
+                    <td>
+                        <strong>${item.full_name || ''}</strong><br>
+                        <span class="muted">${item.id || ''}</span>
+                    </td>
+                    <td>${item.email || ''}<br>${item.phone || ''}</td>
+                    <td>${item.plan_id || ''}</td>
+                    <td>${item.payment_reference || ''}</td>
+                    <td><span class="status ${statusClass(item.status)}">${item.status || 'pending'}</span></td>
+                    <td>${item.created_at || ''}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-primary small" data-action="approve" data-id="${item.id}">Approve</button>
+                            <button class="btn btn-secondary small" data-action="reject" data-id="${item.id}">Reject</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSubscriptions() {
+            message.textContent = '';
+            try {
+                const response = await api('/api/admin/subscriptions');
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const data = await response.json();
+                render(data.items || []);
+            } catch (err) {
+                rows.innerHTML = '<tr><td colspan="7" class="muted">Could not load requests.</td></tr>';
+                message.textContent = err.message || 'Failed to load subscriptions.';
+            }
+        }
+
+        async function updateStatus(id, action) {
+            message.textContent = '';
+            try {
+                const response = await api(`/api/admin/subscriptions/${id}/${action}`, { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const data = await response.json();
+                message.className = 'success';
+                message.textContent = action === 'approve'
+                    ? 'Subscription approved successfully.'
+                    : 'Subscription rejected successfully.';
+                await loadSubscriptions();
+            } catch (err) {
+                message.className = 'error';
+                message.textContent = err.message || 'Action failed.';
+            }
+        }
+
+        rows.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            updateStatus(button.dataset.id, button.dataset.action);
+        });
+
+        loadBtn.addEventListener('click', loadSubscriptions);
+        refreshBtn.addEventListener('click', loadSubscriptions);
+    </script>
+</body>
+</html>
