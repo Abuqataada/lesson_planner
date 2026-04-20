@@ -9,12 +9,17 @@ from typing import Optional
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
-from fastapi import FastAPI, Header, HTTPException, Query, Request
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 import psycopg
 from psycopg.rows import dict_row
 from pydantic import BaseModel
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 
 from ai_analysis_service import AIAnalysisService
 
@@ -25,7 +30,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://neondb_owner:npg_CzyA6c9imSWL@ep-noisy-sun-a41ubng9-pooler.us-east-1.aws.neon.tech/lesson_planner?sslmode=require&channel_binding=require",
+    "postgresql://postgres:postgres@localhost:5432/omtech_ei_db",
 )
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "omtech-admin")
 PAYMENT_NAME = "OMTECH EI LIMITED"
@@ -69,6 +74,81 @@ class SubscriptionRequest(BaseModel):
 
 def normalize_key(value: str) -> str:
     return (value or "").strip().lower()
+
+
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    buffer = io.BytesIO(file_bytes)
+    document = Document(buffer)
+    parts: list[str] = []
+
+    for paragraph in document.paragraphs:
+        text = paragraph.text.strip()
+        if text:
+            parts.append(text)
+
+    for table in document.tables:
+        for row in table.rows:
+            row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+            if row_text:
+                parts.append(row_text)
+
+    return "\n".join(parts)
+
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    reader = PdfReader(io.BytesIO(file_bytes))
+    parts: list[str] = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        text = text.strip()
+        if text:
+            parts.append(text)
+    return "\n".join(parts)
+
+
+def extract_template_outline(upload: UploadFile) -> tuple[str, str]:
+    file_bytes = upload.file.read()
+    filename = (upload.filename or "").lower()
+
+    if filename.endswith(".docx"):
+        return extract_text_from_docx(file_bytes), "docx"
+    if filename.endswith(".pdf"):
+        return extract_text_from_pdf(file_bytes), "pdf"
+
+    raise HTTPException(status_code=400, detail="Template must be a PDF or DOCX file.")
+
+
+def derive_template_labels(template_text: str) -> dict[str, str]:
+    text = normalize_key(template_text)
+    labels = {}
+
+    mappings = {
+        "class": "Class",
+        "subject": "Subject",
+        "topic": "Topic",
+        "subtopic": "Subtopic",
+        "date": "Date",
+        "week": "Week",
+        "duration": "Duration",
+        "resources": "Instructional Resources",
+        "learning objectives": "Learning Objectives",
+        "prior knowledge": "Prior Knowledge",
+        "warm-up": "Warm-up Activity",
+        "warm up": "Warm-up Activity",
+        "teacher activities": "Teacher's Activities",
+        "students activities": "Students' Activities",
+        "student activities": "Students' Activities",
+        "assessment": "Assessment/Evaluation",
+        "plenary": "Plenary",
+        "homework": "Home-Work",
+        "flip ticket": "Flip Ticket",
+    }
+
+    for needle, label in mappings.items():
+        if needle in text:
+            labels[needle] = label
+
+    return labels
 
 
 def get_db_connection():
@@ -299,9 +379,15 @@ def clean_text(text: str) -> str:
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
 
 
-def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") -> bytes:
+def create_lesson_plan_doc(
+    plan_data: dict,
+    teacher_name: str = "ISAH YUSUF",
+    template_labels: Optional[dict[str, str]] = None,
+    template_name: Optional[str] = None,
+) -> bytes:
     doc = Document()
     set_landscape(doc)
+    template_labels = template_labels or {}
 
     plan_data = {k: clean_text(v) if isinstance(v, str) else v for k, v in plan_data.items()}
     if "learning_objectives" in plan_data and isinstance(plan_data["learning_objectives"], dict):
@@ -314,20 +400,26 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     heading = doc.add_heading("Lesson Plan", level=1)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    if template_name:
+        note = doc.add_paragraph(f"Template: {clean_text(template_name)}")
+        note.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        note.runs[0].italic = True
+        doc.add_paragraph()
+
     table_main = doc.add_table(rows=9, cols=3)
     table_main.style = "Table Grid"
     table_main.columns[0].width = Inches(0.6)
 
     rows_data = [
-        ("Class:", plan_data.get("class", "Year 7")),
-        ("Subject:", plan_data.get("subject", "Physics")),
-        ("Topic:", plan_data.get("topic", "Introduction to Physics")),
-        ("Subtopic", plan_data.get("subtopic", plan_data.get("topic", ""))),
-        ("Date", plan_data.get("date", datetime.now().strftime("%d %B, %Y"))),
-        ("Week", plan_data.get("week", "Two")),
-        ("Duration", plan_data.get("duration", "Forty Minutes")),
-        ("Student Age Group", plan_data.get("age_group", "11 - 12 Years")),
-        ("INSTRUCTIONAL RESOURCES:", ""),
+        (template_labels.get("class", "Class:"), plan_data.get("class", "Year 7")),
+        (template_labels.get("subject", "Subject:"), plan_data.get("subject", "Physics")),
+        (template_labels.get("topic", "Topic:"), plan_data.get("topic", "Introduction to Physics")),
+        (template_labels.get("subtopic", "Subtopic"), plan_data.get("subtopic", plan_data.get("topic", ""))),
+        (template_labels.get("date", "Date"), plan_data.get("date", datetime.now().strftime("%d %B, %Y"))),
+        (template_labels.get("week", "Week"), plan_data.get("week", "Two")),
+        (template_labels.get("duration", "Duration"), plan_data.get("duration", "Forty Minutes")),
+        (template_labels.get("age_group", "Student Age Group"), plan_data.get("age_group", "11 - 12 Years")),
+        (template_labels.get("resources", "INSTRUCTIONAL RESOURCES:"), ""),
     ]
 
     for i, (col1, col2) in enumerate(rows_data):
@@ -351,22 +443,22 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
         col3_cell.merge(table_main.cell(row, 2))
     col3_cell.text = ""
 
-    title = col3_cell.add_paragraph("Learning Objectives (Differentiated)")
+    title = col3_cell.add_paragraph(template_labels.get("learning objectives", "Learning Objectives (Differentiated)"))
     title.runs[0].bold = True
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     learning_objectives = plan_data.get("learning_objectives", {})
-    col3_cell.add_paragraph("Basic Objective (for struggling learners):").runs[0].bold = True
+    col3_cell.add_paragraph(template_labels.get("basic objective", "Basic Objective (for struggling learners):")).runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
     p_basic = col3_cell.add_paragraph(f"* {clean_text(learning_objectives.get('basic', 'Define the topic clearly.'))}")
     p_basic.paragraph_format.left_indent = Pt(36)
 
-    col3_cell.add_paragraph("Intermediate Objective (for most students):").runs[0].bold = True
+    col3_cell.add_paragraph(template_labels.get("intermediate objective", "Intermediate Objective (for most students):")).runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
     p_inter = col3_cell.add_paragraph(f"* {clean_text(learning_objectives.get('intermediate', 'Explain the topic with examples.'))}")
     p_inter.paragraph_format.left_indent = Pt(36)
 
-    col3_cell.add_paragraph("Advanced Objective (for high-achieving students):").runs[0].bold = True
+    col3_cell.add_paragraph(template_labels.get("advanced objective", "Advanced Objective (for high-achieving students):")).runs[0].bold = True
     col3_cell.add_paragraph("By the end of the lesson, students will be able to:")
     p_adv = col3_cell.add_paragraph(f"* {clean_text(learning_objectives.get('advanced', 'Analyse the topic in real-world situations.'))}")
     p_adv.paragraph_format.left_indent = Pt(36)
@@ -378,32 +470,32 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
 
     prior_cell = table_dev.cell(0, 0)
     prior_cell.merge(table_dev.cell(1, 0))
-    prior_cell.text = "Prior Knowledge"
+    prior_cell.text = template_labels.get("prior knowledge", "Prior Knowledge")
     prior_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     warmup_cell = table_dev.cell(0, 1)
     warmup_cell.merge(table_dev.cell(1, 1))
-    warmup_cell.text = "Warm-up Activity"
+    warmup_cell.text = template_labels.get("warm-up", "Warm-up Activity")
     warmup_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     note_cell = table_dev.cell(0, 2)
     note_cell.merge(table_dev.cell(1, 2))
-    note_cell.text = "Summarised Learning Note"
+    note_cell.text = template_labels.get("summarised learning note", "Summarised Learning Note")
     note_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     assess_cell = table_dev.cell(0, 5)
     assess_cell.merge(table_dev.cell(1, 5))
-    assess_cell.text = "Assessment/Evaluation"
+    assess_cell.text = template_labels.get("assessment", "Assessment/Evaluation")
     assess_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     learning_cell = table_dev.cell(0, 3)
     learning_cell.merge(table_dev.cell(0, 4))
-    learning_cell.text = "Learning Activities"
+    learning_cell.text = template_labels.get("learning activities", "Learning Activities")
     learning_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    table_dev.cell(1, 3).text = "TEACHER'S ACTIVITIES"
+    table_dev.cell(1, 3).text = template_labels.get("teacher activities", "TEACHER'S ACTIVITIES")
     table_dev.cell(1, 3).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    table_dev.cell(1, 4).text = "STUDENTS' ACTIVITIES"
+    table_dev.cell(1, 4).text = template_labels.get("students activities", "STUDENTS' ACTIVITIES")
     table_dev.cell(1, 4).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     table_dev.cell(2, 0).text = clean_text(plan_data.get("prior_knowledge", "General knowledge from previous lessons."))
@@ -418,9 +510,9 @@ def create_lesson_plan_doc(plan_data: dict, teacher_name: str = "ISAH YUSUF") ->
     table_plenary = doc.add_table(rows=3, cols=2)
     table_plenary.style = "Table Grid"
     plenary_data = [
-        ("Plenary", plan_data.get("plenary", "Summarise key points.")),
-        ("Home-Work", plan_data.get("homework", "Reinforcement task.")),
-        ("Flip Ticket (next Topic)", plan_data.get("flip_ticket", "Preview of next lesson.")),
+        (template_labels.get("plenary", "Plenary"), plan_data.get("plenary", "Summarise key points.")),
+        (template_labels.get("homework", "Home-Work"), plan_data.get("homework", "Reinforcement task.")),
+        (template_labels.get("flip ticket", "Flip Ticket (next Topic)"), plan_data.get("flip_ticket", "Preview of next lesson.")),
     ]
     for index, (label, text) in enumerate(plenary_data):
         table_plenary.cell(index, 0).text = clean_text(label)
@@ -530,32 +622,55 @@ async def reject_subscription(subscription_id: str, x_admin_password: str = Head
 
 
 @app.post("/generate")
-async def generate_plan(request: LessonPlanRequest):
-    if not request.subscriber_key:
+async def generate_plan(
+    class_name: str = Form(...),
+    subject: str = Form(...),
+    topic: str = Form(...),
+    subscriber_key: str = Form(...),
+    lesson_template: UploadFile | None = File(None),
+):
+    if not subscriber_key:
         raise HTTPException(status_code=403, detail="Subscription required. Please subscribe before using the app.")
 
-    subscription = find_subscription(request.subscriber_key)
+    subscription = find_subscription(subscriber_key)
     if not subscription or subscription.get("status") != "approved":
         raise HTTPException(status_code=403, detail="Subscription pending. Access is unlocked after admin approval.")
 
     try:
+        template_outline = ""
+        template_name = None
+        template_labels = {}
+        if lesson_template and lesson_template.filename:
+            template_outline, template_ext = extract_template_outline(lesson_template)
+            template_name = lesson_template.filename
+            if template_outline.strip():
+                template_labels = derive_template_labels(template_outline)
+        else:
+            template_ext = None
+
         plan_data = ai_service.generate_lesson_plan(
-            subject=request.subject,
-            class_level=request.class_name,
-            topic=request.topic,
+            subject=subject,
+            class_level=class_name,
+            topic=topic,
+            template_outline=template_outline,
         )
-        plan_data.setdefault("class", request.class_name)
-        plan_data.setdefault("subject", request.subject)
-        plan_data.setdefault("topic", request.topic)
+        plan_data.setdefault("class", class_name)
+        plan_data.setdefault("subject", subject)
+        plan_data.setdefault("topic", topic)
         plan_data.setdefault("date", datetime.now().strftime("%d %B, %Y"))
         plan_data.setdefault("week", "Two")
         plan_data.setdefault("duration", "Forty Minutes")
-        plan_data.setdefault("age_group", f"{request.class_name} students")
+        plan_data.setdefault("age_group", f"{class_name} students")
 
-        doc_bytes = create_lesson_plan_doc(plan_data, teacher_name="ISAH YUSUF")
+        doc_bytes = create_lesson_plan_doc(
+            plan_data,
+            teacher_name="ISAH YUSUF",
+            template_labels=template_labels,
+            template_name=template_name,
+        )
 
-        safe_subject = sanitize_filename(request.subject, max_len=30)
-        safe_topic = sanitize_filename(request.topic, max_len=40)
+        safe_subject = sanitize_filename(subject, max_len=30)
+        safe_topic = sanitize_filename(topic, max_len=40)
         filename = f"Lesson_Plan_{safe_subject}_{safe_topic}.docx"
 
         return Response(

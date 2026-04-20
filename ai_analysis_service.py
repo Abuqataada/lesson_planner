@@ -97,14 +97,17 @@ class AIAnalysisService:
         return self.models
     
         
-    def generate_lesson_plan(self, subject: str, class_level: str, topic: str) -> dict:
+    def generate_lesson_plan(self, subject: str, class_level: str, topic: str, template_outline: str = "") -> dict:
         """Generate a complete lesson plan using HuggingFace AI"""
         
         if not self.openai_client:
             # Fallback to a basic template
             return self._generate_dummy_lesson_plan(subject, class_level, topic)
         
+        template_hint = f"\nUploaded template outline:\n{template_outline}\n" if template_outline else ""
+
         prompt = f"""Generate a detailed, professional lesson plan for a {class_level} class studying {subject}. The topic is "{topic}".
+    {template_hint}
     
     Use the exact structure below and return ONLY valid JSON with no extra text. The JSON must have these keys: 
     - class, subject, topic, subtopic (same as topic), date (today's date), week (1), duration ("Forty Minutes"), age_group ("appropriate for {class_level}")

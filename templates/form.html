@@ -461,6 +461,12 @@
                     <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Fractions" required>
                 </div>
 
+                <div>
+                    <label for="lesson_template">Lesson Format Template <span class="tiny">(optional)</span></label>
+                    <input type="file" id="lesson_template" name="lesson_template" accept=".pdf,.docx">
+                    <p class="tiny" style="margin-top:0.45rem;">Upload a PDF or DOCX lesson format. If left blank, the app will use the default format.</p>
+                </div>
+
                 <div class="actions">
                     <button id="generateBtn" class="btn btn-primary" type="submit" disabled>Generate Lesson Plan</button>
                     <button id="openSubscriptionBtn" class="btn btn-secondary" type="button">Subscribe / Unlock Access</button>
@@ -695,18 +701,12 @@
             generateBtn.textContent = 'Generating...';
 
             const formData = new FormData(lessonForm);
-            const payload = {
-                class_name: formData.get('class_name'),
-                subject: formData.get('subject'),
-                topic: formData.get('topic'),
-                subscriber_key: subscriberKey,
-            };
+            formData.set('subscriber_key', subscriberKey);
 
             try {
                 const response = await fetch('/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    body: formData,
                 });
 
                 if (!response.ok) {
@@ -718,7 +718,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lesson_Plan_${payload.subject}_${payload.topic}.docx`;
+                a.download = `Lesson_Plan_${formData.get('subject')}_${formData.get('topic')}.docx`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
