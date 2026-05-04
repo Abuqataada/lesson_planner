@@ -1090,6 +1090,7 @@ def create_presentation_pdf(
     _require_reportlab()
     template_labels = template_labels or {}
     theme = resolve_presentation_theme(theme_key, plan_data.get("subject", ""))
+    content = dict(plan_data or {})
     buffer = io.BytesIO()
     page_width, page_height = landscape(letter)
     c = canvas.Canvas(buffer, pagesize=(page_width, page_height))
@@ -1111,59 +1112,37 @@ def create_presentation_pdf(
         c.setStrokeColor(colors.HexColor(stroke))
         c.roundRect(x, y, w, h, 16, stroke=1, fill=1)
 
-    slide_header(f"{clean_text(plan_data.get('subject', 'Subject'))} Presentation", f"Theme: {theme['name']}")
+    slide_header(f"{clean_text(content.get('subject', 'Subject'))} Presentation", f"Theme: {theme['name']}")
     slide_card(24, 110, page_width - 48, page_height - 180, fill=theme["bg"], stroke="#bfdbfe")
     c.setFillColor(colors.HexColor(theme["text"]))
     c.setFont("Helvetica-Bold", 24)
-    c.drawString(42, page_height - 92, f"{clean_text(plan_data.get('topic', 'Topic'))}")
+    c.drawString(42, page_height - 92, f"{clean_text(content.get('topic', 'Topic'))}")
     c.setFont("Helvetica", 12)
     c.setFillColor(colors.HexColor(theme["muted"]))
-    c.drawString(42, page_height - 114, f"Class: {clean_text(plan_data.get('class', ''))} | Date: {clean_text(plan_data.get('date', datetime.now().strftime('%d %B, %Y')))}")
+    c.drawString(42, page_height - 114, f"Class: {clean_text(content.get('class', ''))} | Date: {clean_text(content.get('date', datetime.now().strftime('%d %B, %Y')))}")
     if template_name:
         c.drawString(42, page_height - 132, f"Template: {clean_text(template_name)}")
-    _pdf_draw_wrapped(c, "Teaching prompt: Open with the topic, then explain why it matters before moving to the objectives.", 42, page_height - 165, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Open with the topic, then explain why it matters before moving to the meaning.", 42, page_height - 165, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
 
     slide_card(42, 225, (page_width - 110) / 2, 220, fill="#ffffff", stroke="#dbeafe")
     slide_card(page_width / 2 + 14, 225, (page_width - 110) / 2, 220, fill="#ffffff", stroke="#dbeafe")
     c.setFillColor(colors.HexColor(theme["primary"]))
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(58, 424, "Objectives")
-    c.drawString(page_width / 2 + 30, 424, "Lesson Overview")
-    objectives = [
-        f"Basic: {plan_data.get('learning_objectives', {}).get('basic', '')}",
-        f"Intermediate: {plan_data.get('learning_objectives', {}).get('intermediate', '')}",
-        f"Advanced: {plan_data.get('learning_objectives', {}).get('advanced', '')}",
-    ]
-    overview = [
-        f"{template_labels.get('prior knowledge', 'Prior Knowledge')}: {plan_data.get('prior_knowledge', '')}",
-        f"{template_labels.get('warm-up', 'Warm-up Activity')}: {plan_data.get('warmup_activity', '')}",
-        f"{template_labels.get('resources', 'Instructional Resources')}: " + ", ".join(_split_lines(plan_data.get("instructional_resources", []))),
-    ]
-    _pdf_draw_bullets(c, objectives, 58, 398, (page_width - 130) / 2, font_size=10, leading=13, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
-    _pdf_draw_bullets(c, overview, page_width / 2 + 30, 398, (page_width - 130) / 2, font_size=10, leading=13, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    c.drawString(58, 424, "Overview")
+    c.drawString(page_width / 2 + 30, 424, "Meaning")
+    overview = [content.get("overview_line") or f"{content.get('topic', '')}: Definition, derivation of equations, and applications."]
+    meaning = [content.get("meaning_text") or f"{content.get('topic', '')} is an important concept in {content.get('subject', '')}."]
+    _pdf_draw_bullets(c, overview, 58, 398, (page_width - 130) / 2, font_size=10, leading=13, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_bullets(c, meaning, page_width / 2 + 30, 398, (page_width - 130) / 2, font_size=10, leading=13, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
 
     c.showPage()
-    slide_header("Teaching Flow", "Classroom delivery")
+    slide_header(content.get("examples_heading") or "Examples", "Illustrations")
     slide_card(24, 118, page_width - 48, page_height - 188, fill="#ffffff", stroke="#dbeafe")
     c.setFillColor(colors.HexColor(theme["primary"]))
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(42, page_height - 90, "Teacher-led instruction")
-    _pdf_draw_bullets(
-        c,
-        [
-            f"{template_labels.get('summarised learning note', 'Summarised Learning Note')}: {plan_data.get('learning_note', '')}",
-            f"{template_labels.get('teacher activities', 'Teacher Activities')}: {plan_data.get('teacher_activities', '')}",
-            f"{template_labels.get('student activities', 'Student Activities')}: {plan_data.get('student_activities', '')}",
-        ],
-        42,
-        page_height - 120,
-        page_width - 84,
-        font_size=11,
-        leading=15,
-        bullet_color=colors.HexColor(theme["secondary"]),
-        text_color=colors.HexColor(theme["text"]),
-    )
-    _pdf_draw_wrapped(c, "Teaching prompt: Use the left side to guide explanation, then involve learners with practice and questions.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+    c.drawString(42, page_height - 90, "Examples")
+    _pdf_draw_bullets(c, content.get("examples") or [f"An example related to {content.get('topic', '')}."], 42, page_height - 120, page_width - 84, font_size=11, leading=15, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Use the examples to link the topic to daily life and prior knowledge.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
 
     slide_card(24, 90, page_width - 48, 55, fill="#eff6ff", stroke="#bfdbfe")
     c.setFillColor(colors.HexColor(theme["primary"]))
@@ -1173,31 +1152,52 @@ def create_presentation_pdf(
     c.drawRightString(page_width - 42, 123, "Presentation export")
     c.showPage()
 
-    slide_header("Assessment and Wrap-Up", "Close the lesson")
-    slide_card(24, 110, page_width - 48, page_height - 180, fill="#ffffff", stroke="#dbeafe")
-    _pdf_draw_bullets(
-        c,
-        [
-            f"{template_labels.get('assessment', 'Assessment')}: {plan_data.get('assessment', '')}",
-            f"{template_labels.get('plenary', 'Plenary')}: {plan_data.get('plenary', '')}",
-            f"{template_labels.get('homework', 'Homework')}: {plan_data.get('homework', '')}",
-            f"{template_labels.get('flip ticket', 'Flip Ticket')}: {plan_data.get('flip_ticket', '')}",
-        ],
-        42,
-        page_height - 92,
-        page_width - 84,
-        font_size=11,
-        leading=16,
-        bullet_color=colors.HexColor(theme["secondary"]),
-        text_color=colors.HexColor(theme["text"]),
-    )
-    _pdf_draw_wrapped(c, "Teaching prompt: Finish with a recap, quick check for understanding, and a short takeaway or exit question.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
-    slide_card(24, 90, page_width - 48, 55, fill="#eff6ff", stroke="#bfdbfe")
+    slide_header(content.get("key_terms_heading") or "Terms Associated", "Key terms")
+    slide_card(24, 118, page_width - 48, page_height - 188, fill="#ffffff", stroke="#dbeafe")
     c.setFillColor(colors.HexColor(theme["primary"]))
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(42, 123, f"Prepared by {clean_text(teacher_name)}")
-    c.setFont("Helvetica", 10)
-    c.drawRightString(page_width - 42, 123, "Presentation export")
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(42, page_height - 90, content.get("key_terms_heading") or "Terms Associated")
+    _pdf_draw_bullets(c, content.get("key_terms") or [f"Key term for {content.get('topic', '')}."], 42, page_height - 120, page_width - 84, font_size=11, leading=15, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Give learners time to copy the terms and ask a quick oral question.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+
+    c.showPage()
+    slide_header(content.get("worked_examples_heading") or "Worked Examples", "Practice")
+    slide_card(24, 118, page_width - 48, page_height - 188, fill="#ffffff", stroke="#dbeafe")
+    c.setFillColor(colors.HexColor(theme["primary"]))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(42, page_height - 90, content.get("worked_examples_heading") or "Worked Examples")
+    _pdf_draw_bullets(c, content.get("worked_examples") or [f"Worked example on {content.get('topic', '')}."], 42, page_height - 120, page_width - 84, font_size=11, leading=15, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Walk through each worked example slowly and allow learners to solve the next one.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+
+    c.showPage()
+    slide_header(content.get("classwork_heading") or "CLASSWORK", "In class exercise")
+    slide_card(24, 118, page_width - 48, page_height - 188, fill="#ffffff", stroke="#dbeafe")
+    c.setFillColor(colors.HexColor(theme["primary"]))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(42, page_height - 90, content.get("classwork_heading") or "CLASSWORK")
+    _pdf_draw_bullets(c, content.get("classwork") or [f"1. Define {content.get('topic', '')}."], 42, page_height - 120, page_width - 84, font_size=11, leading=15, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Pause for responses, then review answers with the class.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+
+    c.showPage()
+    slide_header(content.get("weekend_assignment_heading") or "WEEKEND ASSIGNMENT", "Home practice")
+    slide_card(24, 118, page_width - 48, page_height - 188, fill="#ffffff", stroke="#dbeafe")
+    c.setFillColor(colors.HexColor(theme["primary"]))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(42, page_height - 90, content.get("weekend_assignment_heading") or "WEEKEND ASSIGNMENT")
+    _pdf_draw_bullets(c, content.get("weekend_assignment") or [f"1. Study {content.get('topic', '')} and answer related questions."], 42, page_height - 120, page_width - 84, font_size=11, leading=15, bullet_color=colors.HexColor(theme["secondary"]), text_color=colors.HexColor(theme["text"]))
+    _pdf_draw_wrapped(c, f"Teaching prompt: Use this as the closing reinforcement task before the next lesson.", 42, 150, page_width - 84, font_size=11, leading=14, color_value=colors.HexColor(theme["primary"]))
+
+    c.showPage()
+    slide_header("THANK YOU", theme["name"])
+    slide_card(24, 118, page_width - 48, page_height - 188, fill=theme["accent_bg"], stroke="#bfdbfe")
+    c.setFillColor(colors.HexColor(theme["primary"]))
+    c.setFont("Helvetica-Bold", 22)
+    c.drawCentredString(page_width / 2, page_height - 95, "THANK YOU")
+    c.setFont("Helvetica", 12)
+    c.setFillColor(colors.HexColor(theme["text"]))
+    c.drawCentredString(page_width / 2, page_height - 122, theme["hero_note"])
+    c.drawCentredString(page_width / 2, page_height - 146, f"Prepared by {clean_text(teacher_name)}")
+    c.drawCentredString(page_width / 2, page_height - 170, "Presentation export")
 
     c.save()
     buffer.seek(0)
@@ -1258,6 +1258,7 @@ def create_lesson_plan_pptx(
 
     template_labels = template_labels or {}
     theme = resolve_presentation_theme(theme_key, plan_data.get("subject", ""))
+    content = dict(plan_data or {})
     prs = Presentation()
     prs.slide_width = PptxInches(13.333)
     prs.slide_height = PptxInches(7.5)
@@ -1312,99 +1313,54 @@ def create_lesson_plan_pptx(
         accent.fill.fore_color.rgb = RGBColor.from_string(theme_teal)
         accent.line.fill.background()
         _add_text_box(slide, PptxInches(0.65), PptxInches(1.15), PptxInches(12), PptxInches(0.45), f"{theme['name']} Teaching Deck", font_size=16, bold=True, color=theme_teal)
-        _add_text_box(slide, PptxInches(0.65), PptxInches(1.55), PptxInches(12), PptxInches(1.0), f"{plan_data.get('subject', 'Subject')} - {plan_data.get('topic', 'Topic')}", font_size=28, bold=True, color=dark)
-        _add_text_box(slide, PptxInches(0.68), PptxInches(2.48), PptxInches(8.8), PptxInches(0.45), f"Class: {plan_data.get('class', '')}    Date: {plan_data.get('date', '')}", font_size=16, color=muted)
+        _add_text_box(slide, PptxInches(0.65), PptxInches(1.55), PptxInches(12), PptxInches(1.0), f"{content.get('subject', plan_data.get('subject', 'Subject'))} - {content.get('topic', plan_data.get('topic', 'Topic'))}", font_size=28, bold=True, color=dark)
+        _add_text_box(slide, PptxInches(0.68), PptxInches(2.48), PptxInches(8.8), PptxInches(0.45), f"Class: {content.get('class', '')}    Date: {content.get('date', '')}", font_size=16, color=muted)
         if template_name:
             _add_text_box(slide, PptxInches(0.68), PptxInches(2.88), PptxInches(8.8), PptxInches(0.35), f"Template: {template_name}", font_size=12, color=theme_teal)
         add_card(slide, PptxInches(9.2), PptxInches(1.05), PptxInches(3.45), PptxInches(3.2), fill="FFFFFF")
         _add_text_box(slide, PptxInches(9.45), PptxInches(1.3), PptxInches(2.95), PptxInches(0.3), "At a glance", font_size=18, bold=True, color=dark, align=PP_ALIGN.CENTER)
         quick_items = [
-            f"Topic: {plan_data.get('topic', '')}",
-            f"Duration: {plan_data.get('duration', '')}",
-            f"Age group: {plan_data.get('age_group', '')}",
+            f"Topic: {content.get('topic', '')}",
+            f"Duration: {content.get('duration', '')}",
+            f"Age group: {content.get('age_group', '')}",
             f"Prepared by: {teacher_name}",
         ]
         for idx, line in enumerate(quick_items):
             _add_text_box(slide, PptxInches(9.4), PptxInches(1.78 + idx * 0.46), PptxInches(3.0), PptxInches(0.25), f"• {line}", font_size=12, color=muted)
         add_card(slide, PptxInches(0.65), PptxInches(3.45), PptxInches(12), PptxInches(2.05), fill="FFFFFF")
-        _add_text_box(slide, PptxInches(0.95), PptxInches(3.78), PptxInches(11.3), PptxInches(1.3), "This presentation is designed for classroom teaching. It follows the uploaded format when one is provided, and falls back to the default teaching structure when no template is uploaded.", font_size=22, color=dark)
+        _add_text_box(slide, PptxInches(0.95), PptxInches(3.78), PptxInches(11.3), PptxInches(1.3), content.get("cover_subtitle") or content.get("overview_line") or f"Definition, examples, and applications of {content.get('topic', '')}.", font_size=22, color=dark)
         _add_text_box(slide, PptxInches(0.95), PptxInches(5.55), PptxInches(11.3), PptxInches(0.3), theme["hero_note"], font_size=13, color=theme_teal)
-        add_prompt_bar(slide, "Open with the topic, then explain why it matters before moving to the objectives.")
+        add_prompt_bar(slide, "Open with the topic, then explain why it matters before moving to the meaning.")
 
-    def add_two_column_slide(title, left_title, left_items, right_title, right_items, subtitle=None):
-        slide = prs.slides.add_slide(prs.slide_layouts[6])
-        add_bg(slide)
-        add_top_bar(slide, title, subtitle)
-        add_card(slide, PptxInches(0.55), PptxInches(1.0), PptxInches(5.95), PptxInches(5.9), fill=theme["accent_bg"])
-        add_card(slide, PptxInches(6.83), PptxInches(1.0), PptxInches(5.95), PptxInches(5.9), fill="FFFFFF")
-        _add_text_box(slide, PptxInches(0.8), PptxInches(1.25), PptxInches(5.2), PptxInches(0.35), left_title, font_size=18, bold=True, color=theme_blue)
-        _add_text_box(slide, PptxInches(7.08), PptxInches(1.25), PptxInches(5.2), PptxInches(0.35), right_title, font_size=18, bold=True, color=theme_blue)
-        _add_bullets(slide, PptxInches(0.82), PptxInches(1.7), PptxInches(5.05), PptxInches(4.9), left_items, font_size=18, color=dark)
-        _add_bullets(slide, PptxInches(7.1), PptxInches(1.7), PptxInches(5.05), PptxInches(4.9), right_items, font_size=18, color=dark)
-        add_prompt_bar(slide, "Use the left side to guide your explanation, then involve learners with the right side.")
-        return slide
-
-    def add_single_card_slide(title, items, subtitle=None):
+    def add_text_slide(title, body, subtitle=None):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         add_bg(slide)
         add_top_bar(slide, title, subtitle)
         add_card(slide, PptxInches(0.7), PptxInches(1.0), PptxInches(11.95), PptxInches(5.95), fill=theme["accent_bg"])
+        _add_text_box(slide, PptxInches(1.0), PptxInches(1.35), PptxInches(11.3), PptxInches(0.45), title, font_size=21, bold=True, color=theme_blue)
+        _add_text_box(slide, PptxInches(1.0), PptxInches(1.9), PptxInches(11.1), PptxInches(4.2), body, font_size=20, color=dark)
+        add_prompt_bar(slide, "Explain the content slowly and check for understanding before moving on.")
+        return slide
+
+    def add_bullet_slide(title, items, subtitle=None):
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        add_bg(slide)
+        add_top_bar(slide, title, subtitle)
+        add_card(slide, PptxInches(0.7), PptxInches(1.0), PptxInches(11.95), PptxInches(5.95), fill="FFFFFF")
+        _add_text_box(slide, PptxInches(1.0), PptxInches(1.35), PptxInches(11.3), PptxInches(0.4), subtitle or title, font_size=20, bold=True, color=theme_blue)
         _add_bullets(slide, PptxInches(1.0), PptxInches(1.35), PptxInches(11.3), PptxInches(5.3), items, font_size=19, color=dark)
-        add_prompt_bar(slide, "Finish with assessment, recap, and a short homework or exit question.")
+        add_prompt_bar(slide, "Use the content as a quick teaching guide and pause for learners to respond.")
         return slide
 
     add_title_slide()
-    add_two_column_slide(
-        "Objectives",
-        "Learning Goals",
-        [
-            f"Basic: {plan_data.get('learning_objectives', {}).get('basic', '')}",
-            f"Intermediate: {plan_data.get('learning_objectives', {}).get('intermediate', '')}",
-        ],
-        "Advanced Goal",
-        [
-            f"Advanced: {plan_data.get('learning_objectives', {}).get('advanced', '')}",
-            "Share success criteria with learners before the lesson begins.",
-        ],
-        subtitle="What learners should achieve",
-    )
-    add_two_column_slide(
-        "Lesson Overview",
-        "Before Teaching",
-        [
-            f"{template_labels.get('prior knowledge', 'Prior Knowledge')}: {plan_data.get('prior_knowledge', '')}",
-            f"{template_labels.get('warm-up', 'Warm-up Activity')}: {plan_data.get('warmup_activity', '')}",
-        ],
-        "Resources and Setup",
-        [
-            f"{template_labels.get('resources', 'Instructional Resources')}: " + ", ".join(_split_lines(plan_data.get('instructional_resources', []))),
-            f"{template_labels.get('subtopic', 'Subtopic')}: {plan_data.get('subtopic', '')}",
-        ],
-        subtitle="Lesson preparation",
-    )
-    add_two_column_slide(
-        "Teaching Flow",
-        "Teacher Focus",
-        [
-            f"{template_labels.get('summarised learning note', 'Summarised Learning Note')}: {plan_data.get('learning_note', '')}",
-            f"{template_labels.get('teacher activities', 'Teacher Activities')}: {plan_data.get('teacher_activities', '')}",
-        ],
-        "Learner Activity",
-        [
-            f"{template_labels.get('student activities', 'Student Activities')}: {plan_data.get('student_activities', '')}",
-        ],
-        subtitle="Classroom delivery",
-    )
-    add_single_card_slide(
-        "Assessment and Wrap-Up",
-        [
-            f"{template_labels.get('assessment', 'Assessment')}: {plan_data.get('assessment', '')}",
-            f"{template_labels.get('plenary', 'Plenary')}: {plan_data.get('plenary', '')}",
-            f"{template_labels.get('homework', 'Homework')}: {plan_data.get('homework', '')}",
-            f"{template_labels.get('flip ticket', 'Flip Ticket')}: {plan_data.get('flip_ticket', '')}",
-        ],
-        subtitle="Close the lesson",
-    )
+    add_text_slide("TOPIC OVERVIEW", content.get("overview_line") or f"{content.get('topic', '')}: Definition, derivation of equations, and applications.", subtitle="Overview")
+    add_text_slide(content.get("meaning_heading") or f"MEANING OF {content.get('topic', '').upper()}", content.get("meaning_text") or f"{content.get('topic', '')} is an important concept in {content.get('subject', '')}.", subtitle="Meaning")
+    add_bullet_slide(content.get("examples_heading") or "Examples", content.get("examples") or [f"An example related to {content.get('topic', '')}."], subtitle="Examples")
+    add_bullet_slide(content.get("key_terms_heading") or "Terms Associated", content.get("key_terms") or [f"Key terms for {content.get('topic', '')}"], subtitle="Terms")
+    add_bullet_slide(content.get("worked_examples_heading") or "Worked Examples", content.get("worked_examples") or [f"Worked example for {content.get('topic', '')}."], subtitle="Practice")
+    add_bullet_slide(content.get("classwork_heading") or "CLASSWORK", content.get("classwork") or [f"1. Define {content.get('topic', '')}."] , subtitle="Classwork")
+    add_bullet_slide(content.get("weekend_assignment_heading") or "WEEKEND ASSIGNMENT", content.get("weekend_assignment") or [f"1. Study {content.get('topic', '')} and answer related questions."], subtitle="Assignment")
+    add_text_slide(content.get("closing_line") or "THANK YOU", f"{theme['hero_note']}\n\nPrepared by {teacher_name}", subtitle="Closing")
 
     bio = io.BytesIO()
     prs.save(bio)
@@ -1575,20 +1531,45 @@ async def generate_plan(
     else:
         template_prompt_text = ""
 
-    plan_data = ai_service.generate_lesson_plan(
-        subject=subject,
-        class_level=class_name,
-        topic=topic,
-        template_outline=template_prompt_text,
-    )
+    is_presentation = normalize_key(content_type) == "presentation"
+    if is_presentation:
+        plan_data = ai_service.generate_presentation_content(
+            subject=subject,
+            class_level=class_name,
+            topic=topic,
+            template_outline=template_prompt_text,
+        )
+    else:
+        plan_data = ai_service.generate_lesson_plan(
+            subject=subject,
+            class_level=class_name,
+            topic=topic,
+            template_outline=template_prompt_text,
+        )
+
     plan_data.setdefault("class", class_name)
     plan_data.setdefault("subject", subject)
     plan_data.setdefault("topic", topic)
-    plan_data.setdefault("subtopic", topic)
     plan_data.setdefault("date", datetime.now().strftime("%d %B, %Y"))
     plan_data.setdefault("week", "Two")
     plan_data.setdefault("duration", "Forty Minutes")
     plan_data.setdefault("age_group", f"{class_name} students")
+    if is_presentation:
+        plan_data.setdefault("cover_subtitle", f"Definition, examples, and applications of {topic}.")
+        plan_data.setdefault("overview_line", f"{topic}: Definition, derivation of equations, and applications.")
+        plan_data.setdefault("meaning_heading", f"MEANING OF {topic.upper()}")
+        plan_data.setdefault("meaning_text", f"{topic} is an important concept in {subject} for {class_name} learners.")
+        plan_data.setdefault("examples_heading", "Examples")
+        plan_data.setdefault("examples", [f"An example related to {topic}."])
+        plan_data.setdefault("key_terms_heading", f"TERMS ASSOCIATED WITH {topic.upper()}")
+        plan_data.setdefault("key_terms", [f"Key term one in {topic}"])
+        plan_data.setdefault("worked_examples_heading", "Examples")
+        plan_data.setdefault("worked_examples", [f"Worked example on {topic}."])
+        plan_data.setdefault("classwork_heading", "CLASSWORK")
+        plan_data.setdefault("classwork", [f"1. Define {topic} and mention two applications."])
+        plan_data.setdefault("weekend_assignment_heading", "WEEKEND ASSIGNMENT")
+        plan_data.setdefault("weekend_assignment", [f"1. Study {topic} and answer related questions."])
+        plan_data.setdefault("closing_line", "THANK YOU")
 
     safe_subject = sanitize_filename(subject, max_len=30)
     safe_topic = sanitize_filename(topic, max_len=40)
