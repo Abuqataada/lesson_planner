@@ -6,220 +6,55 @@
     <title>Admin Dashboard</title>
     <style>
         :root {
-            --bg: #f5f8ff;
-            --panel: rgba(255, 255, 255, 0.94);
-            --text: #14213d;
-            --muted: #5b6b84;
-            --line: rgba(20, 33, 61, 0.10);
-            --accent: #2563eb;
-            --good: #14b8a6;
-            --bad: #dc2626;
-            --warn: #f59e0b;
-            --shadow: 0 18px 55px rgba(37, 99, 235, 0.12);
+            --bg:#f5f8ff; --panel:rgba(255,255,255,.94); --text:#14213d; --muted:#5b6b84;
+            --line:rgba(20,33,61,.10); --accent:#2563eb; --good:#14b8a6; --bad:#dc2626;
+            --warn:#f59e0b; --shadow:0 18px 55px rgba(37,99,235,.12);
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{
+            min-height:100vh;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;color:var(--text);
+            background:radial-gradient(circle at top left, rgba(37,99,235,.16), transparent 26%), radial-gradient(circle at top right, rgba(20,184,166,.12), transparent 22%), linear-gradient(180deg,#fff 0%,#eef4ff 100%);
+            padding:1.5rem;
         }
-
-        body {
-            min-height: 100vh;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text);
-            background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 26%),
-                radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 22%),
-                linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
-            padding: 1.5rem;
-        }
-
-        .wrap {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            padding: 1.25rem;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(10px);
-        }
-
-        h1 {
-            font-size: clamp(1.9rem, 4vw, 3rem);
-            margin-bottom: 0.5rem;
-        }
-
-        .muted {
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .toolbar {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 0.8rem;
-            margin: 1.25rem 0;
-        }
-
-        input, button {
-            font: inherit;
-        }
-
-        input {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            color: var(--text);
-            padding: 0.95rem 1rem;
-            outline: none;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease;
-        }
-
-        input:focus {
-            border-color: rgba(37, 99, 235, 0.6);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
-        }
-
-        .btn {
-            border: none;
-            border-radius: 16px;
-            padding: 0.95rem 1rem;
-            font-weight: 800;
-            cursor: pointer;
-            transition: transform 0.18s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #6d28d9);
-            color: white;
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #ffffff, #eef4ff);
-            color: var(--text);
-            border: 1px solid var(--line);
-        }
-
-        .grid {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .metrics {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .metric {
-            background: linear-gradient(180deg, #ffffff, #f6f9ff);
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 1rem;
-        }
-
-        .metric strong {
-            display: block;
-            font-size: 1.6rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .table-wrap {
-            overflow-x: auto;
-            margin-top: 1rem;
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            background: #ffffff;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1100px;
-        }
-
-        th, td {
-            padding: 0.9rem 1rem;
-            border-bottom: 1px solid var(--line);
-            text-align: left;
-            vertical-align: top;
-            font-size: 0.93rem;
-        }
-
-        th {
-            background: #f6f9ff;
-            color: #20304d;
-        }
-
-        .status {
-            display: inline-flex;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.78rem;
-            font-weight: 800;
-        }
-
-        .approved { background: rgba(20, 184, 166, 0.12); color: #0f766e; }
-        .pending { background: rgba(245, 158, 11, 0.12); color: #9a5b00; }
-        .rejected { background: rgba(220, 38, 38, 0.12); color: #b91c1c; }
-
-        .row-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .small {
-            padding: 0.6rem 0.85rem;
-            font-size: 0.86rem;
-        }
-
-        .error {
-            margin-top: 0.9rem;
-            color: var(--bad);
-        }
-
-        .success {
-            margin-top: 0.9rem;
-            color: var(--good);
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--accent);
-            background: rgba(37, 99, 235, 0.08);
-            border: 1px solid rgba(37, 99, 235, 0.12);
-            border-radius: 999px;
-            padding: 0.4rem 0.8rem;
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .eyebrow::before {
-            content: "";
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--good);
-        }
-
-        @media (max-width: 900px) {
-            .toolbar, .metrics {
-                grid-template-columns: 1fr;
-            }
-        }
+        .wrap{max-width:1400px;margin:0 auto}
+        .panel{background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:1.25rem;box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+        .eyebrow{display:inline-flex;align-items:center;gap:.5rem;color:var(--accent);background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.12);border-radius:999px;padding:.4rem .8rem;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+        .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+        h1{font-size:clamp(1.9rem,4vw,3rem);margin:.5rem 0}
+        .muted{color:var(--muted);line-height:1.6}
+        .toolbar{display:grid;grid-template-columns:1fr auto auto;gap:.8rem;margin:1.25rem 0}
+        input,button{font:inherit}
+        input{background:#fff;border:1px solid var(--line);border-radius:16px;color:var(--text);padding:.95rem 1rem;outline:none}
+        input:focus{border-color:rgba(37,99,235,.6);box-shadow:0 0 0 4px rgba(37,99,235,.10)}
+        .btn{border:none;border-radius:16px;padding:.95rem 1rem;font-weight:800;cursor:pointer}
+        .btn-primary{background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22)}
+        .btn-secondary{background:linear-gradient(135deg,#fff,#eef4ff);color:var(--text);border:1px solid var(--line)}
+        .grid{display:grid;gap:1rem}
+        .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+        .metric{background:linear-gradient(180deg,#fff,#f6f9ff);border:1px solid var(--line);border-radius:20px;padding:1rem}
+        .metric strong{display:block;font-size:1.6rem;margin-bottom:.25rem}
+        .table-wrap{overflow-x:auto;margin-top:1rem;border:1px solid var(--line);border-radius:20px;background:#fff}
+        table{width:100%;border-collapse:collapse;min-width:1100px}
+        th,td{padding:.9rem 1rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:.93rem}
+        th{background:#f6f9ff;color:#20304d}
+        .status{display:inline-flex;padding:.35rem .65rem;border-radius:999px;font-size:.78rem;font-weight:800}
+        .approved{background:rgba(20,184,166,.12);color:#0f766e}
+        .pending{background:rgba(245,158,11,.12);color:#9a5b00}
+        .rejected{background:rgba(220,38,38,.12);color:#b91c1c}
+        .row-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+        .small{padding:.6rem .85rem;font-size:.86rem}
+        .error{margin-top:.9rem;color:var(--bad)}
+        .success{margin-top:.9rem;color:var(--good)}
+        .section{margin-top:1.2rem}
+        .section h2{font-size:1.25rem;margin-bottom:.35rem}
+        .mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+        .mini-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+        .mini-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:1rem}
+        .mini-card h3{font-size:1rem;margin-bottom:.25rem}
+        .mini-list{display:grid;gap:.65rem;margin-top:.8rem}
+        .mini-row{display:flex;justify-content:space-between;gap:1rem;padding:.7rem .85rem;border-radius:14px;background:#f8fbff;border:1px solid var(--line)}
+        .mini-row strong{display:block}
+        @media (max-width:900px){.toolbar,.metrics{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -227,89 +62,102 @@
         <section class="panel">
             <div class="eyebrow">Admin approvals</div>
             <h1>Subscription Approval Dashboard</h1>
-            <p class="muted">
-                Review subscription requests, approve manual access, and keep the lesson planner locked until payment is verified.
-            </p>
-
+            <p class="muted">Review subscription requests, approve manual access, and keep the lesson planner locked until payment is verified.</p>
             <div class="toolbar">
                 <input id="adminPassword" type="password" placeholder="Admin password">
                 <button class="btn btn-primary" id="loadBtn" type="button">Load requests</button>
                 <button class="btn btn-secondary" id="refreshBtn" type="button">Refresh</button>
             </div>
-
             <div class="grid metrics">
                 <div class="metric"><strong id="totalCount">0</strong><span class="muted">Total requests</span></div>
                 <div class="metric"><strong id="pendingCount">0</strong><span class="muted">Pending approval</span></div>
                 <div class="metric"><strong id="approvedCount">0</strong><span class="muted">Approved access</span></div>
             </div>
-
+            <div class="grid metrics section">
+                <div class="metric"><strong id="generationCount">0</strong><span class="muted">Generated files</span></div>
+                <div class="metric"><strong id="downloadCount">0</strong><span class="muted">Total downloads</span></div>
+                <div class="metric"><strong id="themeCount">0</strong><span class="muted">Tracked subjects</span></div>
+            </div>
+            <div class="section mini-grid three">
+                <div class="mini-card">
+                    <h3>Exports by format</h3>
+                    <div id="formatStats" class="mini-list">
+                        <div class="muted">Loading analytics...</div>
+                    </div>
+                </div>
+                <div class="mini-card">
+                    <h3>Top subjects</h3>
+                    <div id="subjectStats" class="mini-list">
+                        <div class="muted">Loading analytics...</div>
+                    </div>
+                </div>
+                <div class="mini-card">
+                    <h3>Top themes</h3>
+                    <div id="themeStats" class="mini-list">
+                        <div class="muted">Loading analytics...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section mini-card">
+                <h3>Recent generations</h3>
+                <div id="recentGenerations" class="mini-list">
+                    <div class="muted">Loading analytics...</div>
+                </div>
+            </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Contact</th>
-                            <th>Plan</th>
-                            <th>Payment Ref</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th>Actions</th>
+                            <th>Name</th><th>Contact</th><th>Plan</th><th>Payment Ref</th><th>Status</th><th>Created</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rows">
-                        <tr>
-                            <td colspan="7" class="muted">Enter the admin password and load subscription requests.</td>
-                        </tr>
+                        <tr><td colspan="7" class="muted">Enter the admin password and load subscription requests.</td></tr>
                     </tbody>
                 </table>
             </div>
-
             <div id="message" class="error"></div>
         </section>
     </div>
-
     <script>
         const rows = document.getElementById('rows');
         const message = document.getElementById('message');
         const totalCount = document.getElementById('totalCount');
         const pendingCount = document.getElementById('pendingCount');
         const approvedCount = document.getElementById('approvedCount');
+        const generationCount = document.getElementById('generationCount');
+        const downloadCount = document.getElementById('downloadCount');
+        const themeCount = document.getElementById('themeCount');
+        const formatStats = document.getElementById('formatStats');
+        const subjectStats = document.getElementById('subjectStats');
+        const themeStats = document.getElementById('themeStats');
+        const recentGenerations = document.getElementById('recentGenerations');
         const adminPassword = document.getElementById('adminPassword');
         const loadBtn = document.getElementById('loadBtn');
         const refreshBtn = document.getElementById('refreshBtn');
-
-        function statusClass(value) {
-            return value === 'approved' ? 'approved' : value === 'rejected' ? 'rejected' : 'pending';
+        const api = (path, options={}) => fetch(path, { ...options, headers: { ...(options.headers||{}), 'X-Admin-Password': adminPassword.value.trim() } });
+        function statusClass(value){ return value === 'approved' ? 'approved' : value === 'rejected' ? 'rejected' : 'pending'; }
+        function escapeHtml(value){
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
         }
-
-        async function api(path, options = {}) {
-            const headers = Object.assign({}, options.headers || {}, {
-                'X-Admin-Password': adminPassword.value.trim(),
-            });
-            return fetch(path, { ...options, headers });
-        }
-
-        function render(items) {
+        function render(items){
             totalCount.textContent = items.length;
-            pendingCount.textContent = items.filter(item => item.status === 'pending').length;
-            approvedCount.textContent = items.filter(item => item.status === 'approved').length;
-
-            if (!items.length) {
-                rows.innerHTML = '<tr><td colspan="7" class="muted">No subscription requests yet.</td></tr>';
-                return;
-            }
-
+            pendingCount.textContent = items.filter(i=>i.status==='pending').length;
+            approvedCount.textContent = items.filter(i=>i.status==='approved').length;
+            if (!items.length){ rows.innerHTML = '<tr><td colspan="7" class="muted">No subscription requests yet.</td></tr>'; return; }
             rows.innerHTML = items.map(item => `
                 <tr>
-                    <td>
-                        <strong>${item.full_name || ''}</strong><br>
-                        <span class="muted">${item.id || ''}</span>
-                    </td>
-                    <td>${item.email || ''}<br>${item.phone || ''}</td>
-                    <td>${item.plan_id || ''}</td>
-                    <td>${item.payment_reference || ''}</td>
-                    <td><span class="status ${statusClass(item.status)}">${item.status || 'pending'}</span></td>
-                    <td>${item.created_at || ''}</td>
+                    <td><strong>${escapeHtml(item.full_name)}</strong><br><span class="muted">${escapeHtml(item.id)}</span></td>
+                    <td>${escapeHtml(item.email)}<br>${escapeHtml(item.phone)}</td>
+                    <td>${escapeHtml(item.plan_id)}</td>
+                    <td>${escapeHtml(item.payment_reference)}</td>
+                    <td><span class="status ${statusClass(item.status)}">${escapeHtml(item.status || 'pending')}</span></td>
+                    <td>${escapeHtml(item.created_at)}</td>
                     <td>
                         <div class="row-actions">
                             <button class="btn btn-primary small" data-action="approve" data-id="${item.id}">Approve</button>
@@ -319,46 +167,87 @@
                 </tr>
             `).join('');
         }
-
-        async function loadSubscriptions() {
+        async function loadSubscriptions(){
             message.textContent = '';
-            try {
-                const response = await api('/api/admin/subscriptions');
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-                const data = await response.json();
-                render(data.items || []);
-            } catch (err) {
+            try{
+                const [subscriptionsResponse, analyticsResponse] = await Promise.all([
+                    api('/api/admin/subscriptions'),
+                    api('/api/admin/analytics'),
+                ]);
+                if (!subscriptionsResponse.ok) throw new Error(await subscriptionsResponse.text());
+                if (!analyticsResponse.ok) throw new Error(await analyticsResponse.text());
+                const subscriptionsData = await subscriptionsResponse.json();
+                const analyticsData = await analyticsResponse.json();
+                render(subscriptionsData.items || []);
+                renderAnalytics(analyticsData);
+            }catch(err){
                 rows.innerHTML = '<tr><td colspan="7" class="muted">Could not load requests.</td></tr>';
                 message.textContent = err.message || 'Failed to load subscriptions.';
             }
         }
+        function renderAnalytics(data){
+            const summary = data.summary || {};
+            generationCount.textContent = summary.total_generations || 0;
+            downloadCount.textContent = summary.total_downloads || 0;
+            themeCount.textContent = (data.by_subject || []).length || 0;
 
-        async function updateStatus(id, action) {
+            const formatItems = data.by_format || [];
+            formatStats.innerHTML = formatItems.length
+                ? formatItems.map((item) => `
+                    <div class="mini-row">
+                        <div><strong>${escapeHtml(item.output_format || 'unknown')}</strong><div class="muted">Downloads: ${Number(item.downloads || 0)}</div></div>
+                        <strong>${Number(item.count || 0)}</strong>
+                    </div>
+                `).join('')
+                : '<div class="muted">No generation data yet.</div>';
+
+            const subjectItems = data.by_subject || [];
+            subjectStats.innerHTML = subjectItems.length
+                ? subjectItems.map((item) => `
+                    <div class="mini-row">
+                        <div><strong>${escapeHtml(item.subject || 'Untitled')}</strong><div class="muted">Downloads: ${Number(item.downloads || 0)}</div></div>
+                        <strong>${Number(item.count || 0)}</strong>
+                    </div>
+                `).join('')
+                : '<div class="muted">No subject analytics yet.</div>';
+
+            const themeItems = data.by_theme || [];
+            themeStats.innerHTML = themeItems.length
+                ? themeItems.map((item) => `
+                    <div class="mini-row">
+                        <div><strong>${escapeHtml(item.presentation_theme || 'auto')}</strong></div>
+                        <strong>${Number(item.count || 0)}</strong>
+                    </div>
+                `).join('')
+                : '<div class="muted">No theme analytics yet.</div>';
+
+            const recentItems = data.recent_generations || [];
+            recentGenerations.innerHTML = recentItems.length
+                ? recentItems.map((item) => `
+                    <div class="mini-row">
+                        <div>
+                            <strong>${escapeHtml(item.filename || 'Generated file')}</strong>
+                            <div class="muted">${escapeHtml(item.subject || '')} · ${escapeHtml(item.topic || '')}<br>Downloads: ${Number(item.download_count || 0)}${item.last_download_at ? ` · Last download: ${escapeHtml(item.last_download_at)}` : ''}</div>
+                        </div>
+                        <strong>${escapeHtml(item.output_format || '')}${item.presentation_theme ? `<br><span class="muted">${escapeHtml(item.presentation_theme)}</span>` : ''}</strong>
+                    </div>
+                `).join('')
+                : '<div class="muted">No recent generations yet.</div>';
+        }
+        async function updateStatus(id, action){
             message.textContent = '';
-            try {
-                const response = await api(`/api/admin/subscriptions/${id}/${action}`, { method: 'POST' });
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
+            try{
+                const response = await api(`/api/admin/subscriptions/${id}/${action}`, { method:'POST' });
+                if (!response.ok) throw new Error(await response.text());
                 message.className = 'success';
-                message.textContent = action === 'approve'
-                    ? 'Subscription approved successfully.'
-                    : 'Subscription rejected successfully.';
+                message.textContent = action === 'approve' ? 'Subscription approved successfully.' : 'Subscription rejected successfully.';
                 await loadSubscriptions();
-            } catch (err) {
+            }catch(err){
                 message.className = 'error';
                 message.textContent = err.message || 'Action failed.';
             }
         }
-
-        rows.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
-            updateStatus(button.dataset.id, button.dataset.action);
-        });
-
+        rows.addEventListener('click', (event)=>{ const button = event.target.closest('button[data-action]'); if (button) updateStatus(button.dataset.id, button.dataset.action); });
         loadBtn.addEventListener('click', loadSubscriptions);
         refreshBtn.addEventListener('click', loadSubscriptions);
     </script>

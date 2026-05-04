@@ -3,445 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Lesson Plan Generator</title>
+    <title>{{ page_title }}</title>
     <style>
         :root {
             --bg: #f5f8ff;
-            --panel: rgba(255, 255, 255, 0.92);
-            --panel-strong: #ffffff;
+            --panel: rgba(255,255,255,.94);
             --text: #14213d;
             --muted: #5b6b84;
-            --line: rgba(20, 33, 61, 0.10);
+            --line: rgba(20,33,61,.10);
             --accent: #2563eb;
             --accent-2: #14b8a6;
-            --accent-3: #f97316;
+            --warn: #f59e0b;
             --danger: #dc2626;
-            --warning: #f59e0b;
-            --shadow: 0 18px 55px rgba(37, 99, 235, 0.12);
+            --shadow: 0 18px 55px rgba(37,99,235,.12);
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        * { box-sizing:border-box; margin:0; padding:0; }
         body {
-            min-height: 100vh;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text);
+            min-height:100vh;
+            font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color:var(--text);
             background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 26%),
-                radial-gradient(circle at top right, rgba(20, 184, 166, 0.14), transparent 22%),
+                radial-gradient(circle at top left, rgba(37,99,235,.16), transparent 26%),
+                radial-gradient(circle at top right, rgba(20,184,166,.12), transparent 22%),
                 linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
         }
-
         .shell {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 1.5rem;
-            padding: 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
+            min-height:100vh;
+            display:grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap:1.5rem;
+            padding:1.5rem;
+            max-width:1400px;
+            margin:0 auto;
         }
-
         .hero, .panel {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(10px);
+            background:var(--panel);
+            border:1px solid var(--line);
+            border-radius:28px;
+            box-shadow:var(--shadow);
+            backdrop-filter:blur(10px);
         }
-
         .hero {
-            padding: 2.25rem;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            padding:2.25rem;
+            display:flex;
+            flex-direction:column;
+            justify-content:space-between;
+            overflow:hidden;
+            position:relative;
         }
-
-        .hero::before,
-        .hero::after {
-            content: "";
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
+        .hero::before, .hero::after {
+            content:"";
+            position:absolute;
+            border-radius:50%;
+            pointer-events:none;
         }
-
-        .hero::before {
-            width: 260px;
-            height: 260px;
-            right: -70px;
-            top: -70px;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 68%);
-        }
-
-        .hero::after {
-            width: 220px;
-            height: 220px;
-            left: -80px;
-            bottom: -80px;
-            background: radial-gradient(circle, rgba(20, 184, 166, 0.15), transparent 68%);
-        }
-
+        .hero::before { width:260px; height:260px; right:-70px; top:-70px; background:radial-gradient(circle, rgba(37,99,235,.18), transparent 68%); }
+        .hero::after { width:220px; height:220px; left:-80px; bottom:-80px; background:radial-gradient(circle, rgba(20,184,166,.15), transparent 68%); }
         .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--accent);
-            background: rgba(37, 99, 235, 0.08);
-            border: 1px solid rgba(37, 99, 235, 0.12);
-            border-radius: 999px;
-            padding: 0.45rem 0.8rem;
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            display:inline-flex;
+            align-items:center;
+            gap:.5rem;
+            color:var(--accent);
+            background:rgba(37,99,235,.08);
+            border:1px solid rgba(37,99,235,.12);
+            border-radius:999px;
+            padding:.45rem .8rem;
+            font-size:.78rem;
+            font-weight:800;
+            letter-spacing:.08em;
+            text-transform:uppercase;
         }
-
-        h1 {
-            font-size: clamp(2.3rem, 4vw, 4.8rem);
-            line-height: 0.95;
-            margin: 1rem 0 1rem;
-            max-width: 11ch;
-            letter-spacing: -0.03em;
-        }
-
-        .lede {
-            max-width: 64ch;
-            color: var(--muted);
-            font-size: 1.03rem;
-            line-height: 1.75;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .stat {
-            padding: 1rem;
-            border-radius: 20px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 245, 255, 0.95));
-            border: 1px solid var(--line);
-        }
-
-        .stat strong {
-            display: block;
-            font-size: 1rem;
-            margin-bottom: 0.35rem;
-        }
-
-        .stat span, .subtle, .tiny {
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .panel {
-            padding: 1.5rem;
-        }
-
-        .panel h2, .section-title {
-            font-size: 1.2rem;
-            margin-bottom: 0.65rem;
-        }
-
-        .form-grid {
-            display: grid;
-            gap: 0.9rem;
-            margin-top: 1.2rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.92rem;
-            color: #20304d;
-            margin-bottom: 0.35rem;
-            font-weight: 700;
-        }
-
-        input, select, textarea, button {
-            font: inherit;
-        }
-
+        .eyebrow::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--accent-2); }
+        h1 { font-size:clamp(2.2rem, 4vw, 4.6rem); line-height:.95; margin:1rem 0; max-width:11ch; }
+        .lede { max-width:62ch; color:var(--muted); line-height:1.75; font-size:1.02rem; }
+        .panel { padding:1.5rem; }
+        .subtle, .tiny { color:var(--muted); line-height:1.6; }
+        .form-grid { display:grid; gap:.9rem; margin-top:1.1rem; }
+        label { display:block; font-size:.92rem; color:#20304d; margin-bottom:.35rem; font-weight:700; }
+        input, select, textarea, button { font:inherit; }
         input, select, textarea {
-            width: 100%;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            color: var(--text);
-            padding: 0.95rem 1rem;
-            outline: none;
-            transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+            width:100%;
+            background:#fff;
+            border:1px solid var(--line);
+            border-radius:16px;
+            color:var(--text);
+            padding:.95rem 1rem;
+            outline:none;
         }
-
-        input::placeholder, textarea::placeholder {
-            color: #8a97ae;
-        }
-
         input:focus, select:focus, textarea:focus {
-            border-color: rgba(37, 99, 235, 0.6);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
-            transform: translateY(-1px);
+            border-color:rgba(37,99,235,.6);
+            box-shadow:0 0 0 4px rgba(37,99,235,.10);
         }
-
-        textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
-
-        .actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
+        textarea { min-height:110px; resize:vertical; }
+        .actions { display:flex; gap:.75rem; flex-wrap:wrap; }
         .btn {
-            border: none;
-            cursor: pointer;
-            border-radius: 16px;
-            padding: 0.95rem 1.2rem;
-            font-weight: 800;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+            border:none;
+            cursor:pointer;
+            border-radius:16px;
+            padding:.95rem 1.2rem;
+            font-weight:800;
         }
-
-        .btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #6d28d9);
-            color: white;
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #ffffff, #eef4ff);
-            color: var(--text);
-            border: 1px solid var(--line);
-        }
-
+        .btn-primary { background:linear-gradient(135deg, var(--accent), #6d28d9); color:#fff; }
+        .btn-secondary { background:linear-gradient(135deg, #fff, #eef4ff); color:var(--text); border:1px solid var(--line); }
         .status {
-            margin-top: 1rem;
-            padding: 0.95rem 1rem;
-            border-radius: 16px;
-            background: #ffffff;
-            border: 1px solid var(--line);
-            color: var(--muted);
+            margin-top:1rem;
+            padding:.95rem 1rem;
+            border-radius:16px;
+            background:#fff;
+            border:1px solid var(--line);
+            color:var(--muted);
         }
-
-        .status.ok {
-            border-color: rgba(20, 184, 166, 0.25);
-            color: #0f766e;
-            background: rgba(20, 184, 166, 0.06);
+        .status.ok { color:#0f766e; background:rgba(20,184,166,.06); border-color:rgba(20,184,166,.25); }
+        .status.warn { color:#9a5b00; background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.25); }
+        .status.err { color:#b91c1c; background:rgba(220,38,38,.06); border-color:rgba(220,38,38,.25); }
+        .error { color:var(--danger); margin-top:.85rem; min-height:1.2rem; }
+        .card {
+            padding:1rem;
+            border-radius:20px;
+            background:linear-gradient(180deg, #fff, #f6f9ff);
+            border:1px solid var(--line);
         }
-
-        .status.warn {
-            border-color: rgba(245, 158, 11, 0.25);
-            color: #9a5b00;
-            background: rgba(245, 158, 11, 0.08);
+        .section-title {
+            margin-top:1rem;
+            padding-bottom:.55rem;
+            border-bottom:1px solid rgba(20,33,61,.08);
         }
-
-        .status.err {
-            border-color: rgba(220, 38, 38, 0.25);
-            color: #b91c1c;
-            background: rgba(220, 38, 38, 0.06);
+        .section-title h3 {
+            font-size:1rem;
+            text-transform:uppercase;
+            letter-spacing:.08em;
+            color:var(--accent);
+            margin-bottom:.15rem;
         }
-
-        .plans {
-            display: grid;
-            gap: 0.9rem;
-            margin-top: 1.2rem;
+        .output-grid {
+            display:grid;
+            grid-template-columns:repeat(2, minmax(0, 1fr));
+            gap:.8rem;
         }
-
-        .plan {
-            padding: 1rem;
-            border-radius: 20px;
-            background: linear-gradient(180deg, #ffffff, #f6f9ff);
-            border: 1px solid var(--line);
+        .output-option {
+            display:block;
+            cursor:pointer;
+            border-radius:18px;
+            border:1px solid var(--line);
+            background:#fff;
+            padding:1rem;
+            transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
         }
-
-        .plan-head {
-            display: flex;
-            justify-content: space-between;
-            gap: 0.75rem;
-            align-items: center;
-            margin-bottom: 0.55rem;
+        .output-option:hover {
+            transform:translateY(-1px);
+            box-shadow:0 10px 25px rgba(37,99,235,.08);
         }
-
-        .pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.78rem;
-            font-weight: 800;
-            background: rgba(37, 99, 235, 0.10);
-            color: #1d4ed8;
+        .output-option.active {
+            border-color:rgba(37,99,235,.45);
+            box-shadow:0 0 0 4px rgba(37,99,235,.08);
+            background:linear-gradient(180deg, #ffffff, #eff6ff);
         }
-
-        .pill.best {
-            background: rgba(20, 184, 166, 0.12);
-            color: #0f766e;
+        .output-option input {
+            width:auto;
+            margin-right:.6rem;
         }
-
-        .payment-box {
-            margin-top: 1.2rem;
-            padding: 1rem;
-            border-radius: 20px;
-            background: linear-gradient(180deg, #ffffff, #f8fbff);
-            border: 1px solid var(--line);
+        .output-meta {
+            margin-top:.45rem;
+            color:var(--muted);
+            line-height:1.55;
+            font-size:.92rem;
         }
-
-        .payment-box strong {
-            display: block;
-            margin-top: 0.3rem;
-            font-size: 1.05rem;
+        .theme-grid {
+            display:grid;
+            grid-template-columns:repeat(2, minmax(0, 1fr));
+            gap:.85rem;
+            margin-top:.45rem;
         }
-
-        .payment-grid {
-            display: grid;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-            color: var(--muted);
+        .theme-card {
+            position:relative;
+            overflow:hidden;
+            text-align:left;
+            width:100%;
+            padding:1rem;
+            min-height:128px;
+            background:#fff;
         }
-
-        .error {
-            color: var(--danger);
-            margin-top: 0.85rem;
-            min-height: 1.2rem;
+        .theme-card.active {
+            transform:translateY(-2px);
         }
-
+        .theme-swatches {
+            display:flex;
+            gap:.45rem;
+            margin-bottom:.85rem;
+        }
+        .theme-swatch {
+            width:18px;
+            height:18px;
+            border-radius:50%;
+            border:2px solid rgba(255,255,255,.85);
+            box-shadow:0 6px 16px rgba(15,23,42,.10);
+        }
+        .theme-card strong {
+            display:block;
+            font-size:1rem;
+            margin-bottom:.25rem;
+        }
+        .theme-card small {
+            color:var(--muted);
+            line-height:1.45;
+            display:block;
+        }
+        .theme-chip {
+            position:absolute;
+            right:.9rem;
+            top:.9rem;
+            padding:.3rem .55rem;
+            border-radius:999px;
+            font-size:.72rem;
+            font-weight:800;
+            background:rgba(255,255,255,.72);
+            border:1px solid rgba(255,255,255,.55);
+            color:var(--text);
+        }
+        .history {
+            margin-top:1rem;
+            padding:1rem;
+            border-radius:22px;
+            border:1px solid var(--line);
+            background:linear-gradient(180deg, #fff, #f6f9ff);
+        }
+        .history-head {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:1rem;
+            margin-bottom:.9rem;
+        }
+        .history-list {
+            display:grid;
+            gap:.75rem;
+        }
+        .history-item {
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:1rem;
+            padding:.85rem 1rem;
+            border-radius:18px;
+            background:#fff;
+            border:1px solid var(--line);
+        }
+        .history-item strong {
+            display:block;
+            margin-bottom:.2rem;
+        }
+        .history-meta {
+            color:var(--muted);
+            font-size:.9rem;
+            line-height:1.45;
+        }
+        .history-actions {
+            display:flex;
+            align-items:center;
+            gap:.5rem;
+            flex-shrink:0;
+        }
+        .history-link {
+            text-decoration:none;
+            border-radius:14px;
+            padding:.6rem .8rem;
+            font-weight:800;
+            color:#fff;
+            background:linear-gradient(135deg, var(--accent), #6d28d9);
+        }
         .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.70);
-            backdrop-filter: blur(14px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            z-index: 1000;
+            position:fixed;
+            inset:0;
+            background:rgba(255,255,255,.70);
+            backdrop-filter:blur(14px);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:1rem;
+            z-index:1000;
         }
-
-        .modal.show {
-            display: flex;
-        }
-
+        .modal.show { display:flex; }
         .modal-card {
-            width: min(1120px, 100%);
-            max-height: 92vh;
-            overflow: auto;
-            border-radius: 28px;
-            border: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.97);
-            box-shadow: 0 30px 100px rgba(37, 99, 235, 0.18);
-            padding: 1.25rem;
+            width:min(1120px, 100%);
+            max-height:92vh;
+            overflow:auto;
+            border-radius:28px;
+            border:1px solid var(--line);
+            background:rgba(255,255,255,.97);
+            box-shadow:0 30px 100px rgba(37,99,235,.18);
+            padding:1.25rem;
         }
-
-        .modal-top {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .modal-close {
-            background: #ffffff;
-            color: var(--text);
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            width: 42px;
-            height: 42px;
-            cursor: pointer;
-        }
-
-        .modal-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
+        .modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
         .lock-note {
-            padding: 0.95rem 1rem;
-            border-left: 4px solid var(--warning);
-            background: rgba(245, 158, 11, 0.08);
-            border-radius: 16px;
-            color: #8a4f00;
-            margin: 1rem 0;
-            line-height: 1.65;
+            padding:.95rem 1rem;
+            border-left:4px solid var(--warn);
+            background:rgba(245,158,11,.08);
+            border-radius:16px;
+            color:#8a4f00;
+            margin:1rem 0;
+            line-height:1.65;
         }
-
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-top-color: white;
-            display: inline-block;
-            animation: spin 0.75s linear infinite;
-            vertical-align: middle;
-            margin-right: 0.5rem;
+        .pill {
+            display:inline-flex;
+            padding:.35rem .65rem;
+            border-radius:999px;
+            background:rgba(37,99,235,.10);
+            color:#1d4ed8;
+            font-size:.78rem;
+            font-weight:800;
         }
-
+        .pill.best { background:rgba(20,184,166,.12); color:#0f766e; }
         .admin-link {
-            position: fixed;
-            right: 1rem;
-            bottom: 1rem;
-            z-index: 2;
-            color: var(--accent);
-            text-decoration: none;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--line);
-            padding: 0.7rem 0.9rem;
-            border-radius: 999px;
-            font-size: 0.9rem;
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+            position:fixed;
+            right:1rem;
+            bottom:1rem;
+            background:#fff;
+            color:var(--accent);
+            border:1px solid var(--line);
+            border-radius:999px;
+            padding:.75rem .95rem;
+            text-decoration:none;
+            box-shadow:var(--shadow);
+            z-index:2;
         }
-
-        .eyebrow::before {
-            content: "";
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent-2);
+        .page-switch {
+            display:flex;
+            gap:.75rem;
+            flex-wrap:wrap;
+            margin-top:1.1rem;
         }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .page-pill {
+            display:inline-flex;
+            align-items:center;
+            gap:.45rem;
+            padding:.7rem .95rem;
+            border-radius:999px;
+            border:1px solid var(--line);
+            background:#fff;
+            color:var(--text);
+            text-decoration:none;
+            font-weight:800;
         }
-
-        @media (max-width: 1000px) {
-            .shell, .modal-grid, .stats {
-                grid-template-columns: 1fr;
-            }
+        .page-pill.active {
+            background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(20,184,166,.10));
+            border-color:rgba(37,99,235,.28);
+            color:var(--accent);
         }
+        @media (max-width:1000px) { .shell, .modal-grid { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
     <div class="shell">
         <section class="hero">
             <div>
-                <div class="eyebrow">Monetized AI Lesson Planner</div>
-                <h1>Bright, fast, and gated for approved subscribers.</h1>
+                <div class="eyebrow">Lesson planner</div>
+                <h1>{{ page_heading }}</h1>
                 <p class="lede">
-                    This app uses AI API quota every time a lesson plan is generated, so access is protected by a subscription and manual approval. Once approved, subscribers can generate lesson plans instantly from this same interface.
+                    {{ page_subtitle }}
                 </p>
+                <div class="page-switch">
+                    <a class="page-pill {% if mode == 'lesson' %}active{% endif %}" href="/">Lesson Plan DOCX</a>
+                    <a class="page-pill {% if mode == 'presentation' %}active{% endif %}" href="/presentation">Presentation PPTX</a>
+                </div>
             </div>
-
         </section>
 
         <section class="panel">
-            <h2>Lesson Plan Generator</h2>
-            <p class="subtle">Enter your details below. The app stays locked until your subscription has been approved.</p>
+            <h2>{% if mode == 'presentation' %}Generate Presentation{% else %}Generate Lesson Plan{% endif %}</h2>
+            <p class="subtle">
+                {% if mode == 'presentation' %}
+                    Enter your lesson details to generate a classroom presentation in PPTX format.
+                {% else %}
+                    Enter your lesson details to generate a formal lesson plan in DOCX format.
+                {% endif %}
+            </p>
 
             <div id="accessStatus" class="status warn">Checking subscription status...</div>
 
@@ -450,30 +385,84 @@
                     <label for="class_name">Class Level</label>
                     <input type="text" id="class_name" name="class_name" placeholder="e.g., Year 7, Grade 5, JSS 1" required>
                 </div>
-
                 <div>
                     <label for="subject">Subject</label>
                     <input type="text" id="subject" name="subject" placeholder="e.g., Physics, Mathematics, English" required>
                 </div>
-
                 <div>
                     <label for="topic">Topic</label>
                     <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Fractions" required>
                 </div>
-
                 <div>
                     <label for="lesson_template">Lesson Format Template <span class="tiny">(optional)</span></label>
                     <input type="file" id="lesson_template" name="lesson_template" accept=".pdf,.docx">
-                    <p class="tiny" style="margin-top:0.45rem;">Upload a PDF or DOCX lesson format. If left blank, the app will use the default format.</p>
+                    <p class="tiny" style="margin-top:.45rem;">Upload a PDF or DOCX lesson format. If blank, the default format is used.</p>
                 </div>
-
+                <input type="hidden" id="content_type" name="content_type" value="{{ mode }}">
+                <div class="section-title" style="grid-column:1 / -1;">
+                    <h3>Export Type</h3>
+                    <p class="subtle">Choose the file format you want to download.</p>
+                </div>
+                <div style="grid-column:1 / -1;">
+                    <label for="output_format">{% if mode == 'presentation' %}Presentation export format{% else %}Lesson export format{% endif %}</label>
+                    <select id="output_format" name="output_format">
+                        {% if mode == 'presentation' %}
+                        <option value="pptx" selected>PowerPoint Presentation (.pptx)</option>
+                        <option value="pdf">PDF Presentation (.pdf)</option>
+                        {% else %}
+                        <option value="docx" selected>Word Document (.docx)</option>
+                        <option value="pdf">PDF Lesson Plan (.pdf)</option>
+                        {% endif %}
+                    </select>
+                    <p class="tiny" style="margin-top:.45rem;">{% if mode == 'presentation' %}PPTX is best for editable slides. PDF is best for sharing and printing.{% else %}DOCX is best for editing. PDF is best for sharing and printing.{% endif %}</p>
+                </div>
+                {% if mode == 'presentation' %}
+                <div style="grid-column:1 / -1;">
+                    <label for="presentation_theme">Presentation Theme</label>
+                    <input type="hidden" id="presentation_theme" name="presentation_theme" value="auto">
+                    <div class="theme-grid" id="themeGrid">
+                        {% for theme in presentation_themes %}
+                        <button
+                            type="button"
+                            class="output-option theme-card {% if theme.key == 'auto' %}active{% endif %}"
+                            data-theme-button
+                            data-theme-key="{{ theme.key }}"
+                            style="--theme-primary: {{ theme.primary }}; --theme-secondary: {{ theme.secondary }}; --theme-bg: {{ theme.bg }};"
+                        >
+                            <span class="theme-chip">{% if theme.key == 'auto' %}Recommended{% else %}Premium{% endif %}</span>
+                            <div class="theme-swatches" aria-hidden="true">
+                                <span class="theme-swatch" style="background: {{ theme.primary }};"></span>
+                                <span class="theme-swatch" style="background: {{ theme.secondary }};"></span>
+                                <span class="theme-swatch" style="background: {{ theme.bg }}; border-color: rgba(15,23,42,.08);"></span>
+                            </div>
+                            <strong>{{ theme.name }}</strong>
+                            <small>{{ theme.description }}</small>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <p class="tiny" style="margin-top:.45rem;">Auto picks a polished theme based on the subject. Click any card to override it for a different classroom style.</p>
+                </div>
+                {% endif %}
                 <div class="actions">
-                    <button id="generateBtn" class="btn btn-primary" type="submit" disabled>Generate Lesson Plan</button>
+                    <button id="generateBtn" class="btn btn-primary" type="submit" disabled>{% if mode == 'presentation' %}Generate Presentation{% else %}Generate Lesson Plan{% endif %}</button>
                     <button id="openSubscriptionBtn" class="btn btn-secondary" type="button">Subscribe / Unlock Access</button>
                 </div>
             </form>
 
             <div class="error" id="error"></div>
+
+            <div class="history">
+                <div class="history-head">
+                    <div>
+                        <h3>Recent Downloads</h3>
+                        <p class="tiny">Your last generated lesson plans or presentations appear here after approval.</p>
+                    </div>
+                    <button id="refreshHistoryBtn" class="btn btn-secondary" type="button">Refresh history</button>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="tiny">Approved subscribers will see their generated files here.</div>
+                </div>
+            </div>
         </section>
     </div>
 
@@ -481,52 +470,32 @@
 
     <div class="modal" id="subscriptionModal" aria-hidden="true">
         <div class="modal-card">
-            <div class="modal-top">
-                <div>
-                    <div class="eyebrow">Subscription Required</div>
-                    <h2 style="margin-top:0.35rem;">AI quota usage makes this a paid product</h2>
-                    <p class="subtle" style="margin-top:0.5rem;">
-                        Submit your payment reference below. The admin will verify the payment and manually approve your account before access is enabled.
-                    </p>
-                </div>
-                <button class="modal-close" id="closeModalBtn" type="button">X</button>
-            </div>
-
+            <div class="eyebrow">Subscription required</div>
+            <h2 style="margin-top:.4rem;">AI quota usage makes this a paid product</h2>
+            <p class="subtle" style="margin-top:.5rem;">
+                Submit your payment reference below. The admin will verify payment and manually approve your account before access is enabled.
+            </p>
             <div class="lock-note">
                 Subscription is required because every lesson plan uses AI API quota. Termly access is <strong>NGN 2,000</strong>.
                 Payment account: <strong>{{ payment_name }}</strong>, <strong>{{ payment_account }}</strong> on <strong>{{ payment_bank }}</strong>.
             </div>
-
             <div class="modal-grid">
                 <div>
-                    <h3 class="section-title">Recommended plans</h3>
-                    <div class="plans">
-                        {% for plan in subscription_plans %}
-                        <div class="plan">
-                            <div class="plan-head">
-                                <strong>{{ plan.name }}</strong>
-                                <span class="pill {% if plan.badge == 'Best Value' %}best{% endif %}">{{ plan.badge }}</span>
-                            </div>
-                            <div style="font-size:1.45rem; font-weight:800;">{{ plan.price }} <span style="font-size:0.92rem; color:var(--muted); font-weight:600;">{{ plan.billing }}</span></div>
-                            <p class="tiny" style="margin-top:0.45rem;">{{ plan.description }}</p>
+                    <h3 class="subtle" style="margin-bottom:.6rem;">Recommended plans</h3>
+                    {% for plan in subscription_plans %}
+                    <div class="card" style="margin-bottom:.8rem;">
+                        <div style="display:flex; justify-content:space-between; gap:.5rem; align-items:center;">
+                            <strong>{{ plan.name }}</strong>
+                            <span class="pill {% if plan.badge == 'Best Value' %}best{% endif %}">{{ plan.badge }}</span>
                         </div>
-                        {% endfor %}
+                        <div style="font-size:1.4rem; font-weight:900; margin-top:.3rem;">{{ plan.price }} <span class="tiny">{{ plan.billing }}</span></div>
+                        <p class="tiny" style="margin-top:.35rem;">{{ plan.description }}</p>
                     </div>
-
-                    <div class="payment-box">
-                        <h3 class="section-title">Pay to</h3>
-                        <strong>{{ payment_name }}</strong>
-                        <div class="payment-grid">
-                            <div>Account number: {{ payment_account }}</div>
-                            <div>Bank: {{ payment_bank }}</div>
-                            <div>Approval: Manual review by admin after payment confirmation.</div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
-
                 <div>
-                    <h3 class="section-title">Submit payment details</h3>
-                    <form id="subscriptionForm" class="form-grid" style="margin-top:0.8rem;">
+                    <h3 class="subtle" style="margin-bottom:.6rem;">Submit payment details</h3>
+                    <form id="subscriptionForm" class="form-grid">
                         <div>
                             <label for="full_name">Full name</label>
                             <input id="full_name" name="full_name" placeholder="Your full name" required>
@@ -549,14 +518,14 @@
                         </div>
                         <div>
                             <label for="payment_reference">Payment reference / note</label>
-                            <textarea id="payment_reference" name="payment_reference" placeholder="Enter your bank transfer reference or payment note" required></textarea>
+                            <textarea id="payment_reference" name="payment_reference" placeholder="Enter your payment reference" required></textarea>
                         </div>
                         <div class="actions">
                             <button id="submitSubscriptionBtn" class="btn btn-primary" type="submit">Submit for approval</button>
                             <button class="btn btn-secondary" id="refreshStatusBtn" type="button">Check status</button>
                         </div>
                     </form>
-                    <div class="status" id="subscriptionStatus">Your account is locked until the admin approves your subscription.</div>
+                    <div id="subscriptionStatus" class="status" style="margin-top:1rem;">Your account is locked until the admin approves your subscription.</div>
                     <div class="error" id="subscriptionError"></div>
                 </div>
             </div>
@@ -570,17 +539,21 @@
         const generateBtn = document.getElementById('generateBtn');
         const modal = document.getElementById('subscriptionModal');
         const openSubscriptionBtn = document.getElementById('openSubscriptionBtn');
-        const closeModalBtn = document.getElementById('closeModalBtn');
         const subscriptionForm = document.getElementById('subscriptionForm');
         const subscriptionStatus = document.getElementById('subscriptionStatus');
         const subscriptionError = document.getElementById('subscriptionError');
         const refreshStatusBtn = document.getElementById('refreshStatusBtn');
         const submitSubscriptionBtn = document.getElementById('submitSubscriptionBtn');
-
+        const exportFormat = document.getElementById('output_format');
+        const presentationTheme = document.getElementById('presentation_theme');
+        const themeButtons = Array.from(document.querySelectorAll('[data-theme-button]'));
+        const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+        const historyList = document.getElementById('historyList');
+        const pageMode = "{{ mode }}";
         const subscriberKeyStorage = 'lesson_planner_subscriber_key';
 
         function setLocked(locked) {
-            lessonForm.querySelectorAll('input, select, button').forEach((el) => {
+            lessonForm.querySelectorAll('input, select, button, textarea').forEach((el) => {
                 if (el.id !== 'openSubscriptionBtn') {
                     el.disabled = locked && el !== generateBtn;
                 }
@@ -588,19 +561,84 @@
             generateBtn.disabled = locked;
         }
 
-        function showModal() {
-            modal.classList.add('show');
-            modal.setAttribute('aria-hidden', 'false');
+        function showModal() { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        function hideModal() { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+        function setStatus(kind, message) { accessStatus.className = `status ${kind}`; accessStatus.textContent = message; }
+
+        function updateGenerateLabel() {
+            generateBtn.textContent = pageMode === 'presentation' ? 'Generate Presentation' : 'Generate Lesson Plan';
         }
 
-        function hideModal() {
-            modal.classList.remove('show');
-            modal.setAttribute('aria-hidden', 'true');
+        function getSelectedExport() {
+            return (exportFormat && exportFormat.value ? exportFormat.value : (pageMode === 'presentation' ? 'pptx' : 'docx')).toLowerCase();
         }
 
-        function setStatus(kind, message) {
-            accessStatus.className = `status ${kind}`;
-            accessStatus.textContent = message;
+        function setSelectedTheme(themeKey) {
+            if (presentationTheme) {
+                presentationTheme.value = themeKey || 'auto';
+            }
+            themeButtons.forEach((button) => {
+                const isActive = button.dataset.themeKey === (themeKey || 'auto');
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function formatDate(value) {
+            try {
+                return new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+            } catch (err) {
+                return value || '';
+            }
+        }
+
+        async function loadHistory() {
+            const subscriberKey = localStorage.getItem(subscriberKeyStorage);
+            if (!subscriberKey) {
+                historyList.innerHTML = '<div class="tiny">Subscribe and get approved to see your generated files here.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/generations?subscriber_key=${encodeURIComponent(subscriberKey)}`);
+                if (!response.ok) throw new Error(await response.text());
+                const data = await response.json();
+                if (!data.items || !data.items.length) {
+                    historyList.innerHTML = '<div class="tiny">No generated files yet. Create your first lesson output to populate this area.</div>';
+                    return;
+                }
+
+                historyList.innerHTML = data.items.map((item) => {
+                    const label = item.output_format === 'pptx' ? 'Presentation' : item.output_format === 'pdf' ? 'PDF Export' : 'Lesson Plan';
+                    const downloadUrl = `/api/generations/${encodeURIComponent(item.id)}/download?subscriber_key=${encodeURIComponent(subscriberKey)}`;
+                    return `
+                        <div class="history-item">
+                            <div>
+                                <strong>${escapeHtml(label)} - ${escapeHtml(item.subject)}</strong>
+                                <div class="history-meta">
+                                    ${escapeHtml(item.topic)}<br>
+                                    ${escapeHtml(formatDate(item.created_at))}<br>
+                                    Downloads: ${Number(item.download_count || 0)}${item.presentation_theme ? `<br>Theme: ${escapeHtml(item.presentation_theme)}` : ''}
+                                </div>
+                            </div>
+                            <div class="history-actions">
+                                <a class="history-link" href="${downloadUrl}">Download again</a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                historyList.innerHTML = `<div class="tiny">${escapeHtml(err.message || 'Could not load history.')}</div>`;
+            }
         }
 
         async function fetchSubscriptionStatus() {
@@ -617,7 +655,7 @@
                 const data = await response.json();
                 if (data.status === 'approved') {
                     setLocked(false);
-                    setStatus('ok', 'Access approved. You can generate lesson plans now.');
+                    setStatus('ok', pageMode === 'presentation' ? 'Access approved. You can generate presentations now.' : 'Access approved. You can generate lesson plans now.');
                     hideModal();
                 } else if (data.status === 'pending') {
                     setLocked(true);
@@ -636,20 +674,17 @@
         }
 
         openSubscriptionBtn.addEventListener('click', () => showModal());
-        closeModalBtn.addEventListener('click', () => hideModal());
         refreshStatusBtn.addEventListener('click', fetchSubscriptionStatus);
-
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                hideModal();
-            }
+        refreshHistoryBtn.addEventListener('click', loadHistory);
+        themeButtons.forEach((button) => {
+            button.addEventListener('click', () => setSelectedTheme(button.dataset.themeKey || 'auto'));
         });
-
+        modal.addEventListener('click', (event) => { if (event.target === modal) hideModal(); });
         subscriptionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             subscriptionError.textContent = '';
             submitSubscriptionBtn.disabled = true;
-            submitSubscriptionBtn.innerHTML = '<span class="spinner"></span>Submitting...';
+            submitSubscriptionBtn.textContent = 'Submitting...';
 
             const payload = {
                 full_name: document.getElementById('full_name').value.trim(),
@@ -665,10 +700,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
+                if (!response.ok) throw new Error(await response.text());
 
                 const data = await response.json();
                 const subscriberKey = (payload.email || payload.phone).toLowerCase();
@@ -678,6 +710,7 @@
                 setLocked(true);
                 showModal();
                 await fetchSubscriptionStatus();
+                await loadHistory();
             } catch (err) {
                 subscriptionError.textContent = err.message || 'Could not submit subscription.';
             } finally {
@@ -689,7 +722,6 @@
         lessonForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             errorDiv.textContent = '';
-
             const subscriberKey = localStorage.getItem(subscriberKeyStorage);
             if (!subscriberKey) {
                 setStatus('warn', 'Please subscribe first to unlock access.');
@@ -699,39 +731,42 @@
 
             generateBtn.disabled = true;
             generateBtn.textContent = 'Generating...';
-
             const formData = new FormData(lessonForm);
             formData.set('subscriber_key', subscriberKey);
+            formData.set('output_format', getSelectedExport());
+            formData.set('content_type', pageMode);
+            if (presentationTheme) {
+                formData.set('presentation_theme', presentationTheme.value || 'auto');
+            }
+            const downloadExt = getSelectedExport();
 
             try {
-                const response = await fetch('/generate', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const message = await response.text();
-                    throw new Error(message || 'Failed to generate plan');
-                }
+                const response = await fetch('/generate', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(await response.text());
 
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lesson_Plan_${formData.get('subject')}_${formData.get('topic')}.docx`;
+                const filePrefix = pageMode === 'presentation' ? 'Presentation' : 'Lesson_Plan';
+                a.download = `${filePrefix}_${formData.get('subject')}_${formData.get('topic')}.${downloadExt}`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                await loadHistory();
             } catch (err) {
-                errorDiv.textContent = err.message || 'Failed to generate lesson plan.';
+                errorDiv.textContent = err.message || (pageMode === 'presentation' ? 'Failed to generate presentation.' : 'Failed to generate lesson plan.');
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.textContent = 'Generate Lesson Plan';
+                generateBtn.textContent = pageMode === 'presentation' ? 'Generate Presentation' : 'Generate Lesson Plan';
             }
         });
 
         fetchSubscriptionStatus();
+        loadHistory();
+        updateGenerateLabel();
+        setSelectedTheme(presentationTheme ? presentationTheme.value : 'auto');
     </script>
 </body>
 </html>

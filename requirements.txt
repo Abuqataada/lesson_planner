@@ -6,5 +6,7 @@ openai
 python-dotenv
 jinja2
 numpy
-psycopg[binary]
 pypdf
+psycopg[binary]
+python-pptx
+reportlab
