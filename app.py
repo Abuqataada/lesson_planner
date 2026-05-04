@@ -2,10 +2,11 @@ import io
 import json
 import os
 import re
+import calendar
 from contextlib import contextmanager
 import unicodedata
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -85,22 +86,25 @@ PAYMENT_BANK = "MONIEPOINT"
 
 SUBSCRIPTION_PLANS = [
     {
-        "id": "termly",
-        "name": "Termly Access",
-        "price": "NGN 2,000",
-        "billing": "per term",
+        "id": "monthly",
+        "name": "Monthly Access",
+        "price": "NGN 4,000",
+        "billing": "per month",
         "badge": "Recommended",
-        "description": "Best for schools and teachers who want access for a single term.",
+        "description": "Best for schools and teachers who want flexible month-to-month access.",
     },
     {
         "id": "annual",
         "name": "Annual Access",
-        "price": "NGN 20,000",
-        "billing": "per year",
+        "price": "NGN 40,000",
+        "billing": "per annum",
         "badge": "Best Value",
         "description": "Best for active users who want uninterrupted access.",
     },
 ]
+
+RENEWAL_NOTICE_DAYS = 7
+GRACE_PERIOD_DAYS = 3
 
 app = FastAPI(title="Lesson Planner")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -119,12 +123,154 @@ class SubscriptionRequest(BaseModel):
     full_name: str
     email: str
     phone: str
-    plan_id: str = "termly"
+    plan_id: str = "monthly"
     payment_reference: str
 
 
 def normalize_key(value: str) -> str:
     return (value or "").strip().lower()
+
+
+def normalize_plan_id(value: str) -> str:
+    key = normalize_key(value)
+    aliases = {
+        "termly": "monthly",
+        "month": "monthly",
+        "monthly": "monthly",
+        "annual": "annual",
+        "yearly": "annual",
+        "annum": "annual",
+    }
+    return aliases.get(key, key or "monthly")
+
+
+def iso_now() -> str:
+    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    except Exception:
+        return None
+
+
+def format_iso_datetime(value: Optional[datetime]) -> Optional[str]:
+    if not value:
+        return None
+    return value.replace(microsecond=0).isoformat() + "Z"
+
+
+def add_months(base: datetime, months: int) -> datetime:
+    base = base.replace(microsecond=0)
+    month_index = base.month - 1 + months
+    year = base.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(base.day, calendar.monthrange(year, month)[1])
+    return base.replace(year=year, month=month, day=day)
+
+
+def plan_cycle_months(plan_id: str) -> int:
+    plan = normalize_plan_id(plan_id)
+    return 12 if plan == "annual" else 1
+
+
+def calculate_cycle_dates(plan_id: str, activated_at: Optional[str] = None) -> tuple[str, str, str]:
+    activated_dt = parse_iso_datetime(activated_at) or datetime.utcnow().replace(microsecond=0)
+    expires_dt = add_months(activated_dt, plan_cycle_months(plan_id))
+    activated_iso = format_iso_datetime(activated_dt) or iso_now()
+    expires_iso = format_iso_datetime(expires_dt) or iso_now()
+    return activated_iso, expires_iso, expires_iso
+
+
+def subscription_effective_state(record: Optional[dict]) -> dict:
+    if not record:
+        return {
+            "status": "unregistered",
+            "stored_status": None,
+            "activated_at": None,
+            "expires_at": None,
+            "next_renewal_at": None,
+            "grace_ends_at": None,
+            "is_active": False,
+            "in_grace_period": False,
+            "days_remaining": None,
+            "grace_days_remaining": None,
+            "renewal_due_soon": False,
+        }
+
+    item = dict(record)
+    stored_status = normalize_key(item.get("status"))
+    plan_id = normalize_plan_id(item.get("plan_id", "monthly"))
+    item["plan_id"] = plan_id
+
+    activated_at = item.get("activated_at") or item.get("approved_at") or item.get("created_at")
+    expires_at = item.get("expires_at") or item.get("next_renewal_at")
+    activated_dt = parse_iso_datetime(activated_at) or parse_iso_datetime(item.get("created_at")) or datetime.utcnow().replace(microsecond=0)
+    expires_dt = parse_iso_datetime(expires_at)
+
+    days_remaining = None
+    renewal_due_soon = False
+    grace_ends_at = None
+    grace_days_remaining = None
+    in_grace_period = False
+
+    if stored_status == "approved":
+        if not expires_dt:
+            activated_iso, expires_iso, renewal_iso = calculate_cycle_dates(plan_id, format_iso_datetime(activated_dt))
+            activated_at = activated_iso
+            expires_at = expires_iso
+            next_renewal_at = renewal_iso
+            expires_dt = parse_iso_datetime(expires_at)
+        else:
+            activated_at = format_iso_datetime(activated_dt)
+            expires_at = format_iso_datetime(expires_dt)
+            next_renewal_at = expires_at
+
+        now = datetime.utcnow().replace(microsecond=0)
+        grace_end_dt = expires_dt + timedelta(days=GRACE_PERIOD_DAYS) if expires_dt else None
+        if expires_dt and now > grace_end_dt:
+            effective_status = "expired"
+            is_active = False
+            grace_ends_at = format_iso_datetime(grace_end_dt)
+        elif expires_dt and now > expires_dt:
+            effective_status = "approved"
+            is_active = True
+            in_grace_period = True
+            grace_ends_at = format_iso_datetime(grace_end_dt)
+            delta = grace_end_dt - now
+            grace_days_remaining = max(delta.days, 0)
+            days_remaining = 0
+        else:
+            effective_status = "approved"
+            is_active = True
+            grace_ends_at = format_iso_datetime(grace_end_dt)
+            if expires_dt:
+                delta = expires_dt - now
+                days_remaining = max(delta.days, 0)
+                renewal_due_soon = delta <= timedelta(days=RENEWAL_NOTICE_DAYS)
+    else:
+        effective_status = stored_status or "pending"
+        is_active = False
+        activated_at = format_iso_datetime(parse_iso_datetime(activated_at))
+        expires_at = format_iso_datetime(parse_iso_datetime(expires_at))
+        next_renewal_at = expires_at
+
+    item["stored_status"] = stored_status or "pending"
+    item["status"] = effective_status
+    item["activated_at"] = activated_at
+    item["expires_at"] = expires_at
+    item["next_renewal_at"] = next_renewal_at
+    item["grace_ends_at"] = grace_ends_at
+    item["is_active"] = is_active
+    item["in_grace_period"] = in_grace_period
+    item["days_remaining"] = days_remaining
+    item["grace_days_remaining"] = grace_days_remaining
+    item["renewal_due_soon"] = renewal_due_soon
+    return item
 
 
 @contextmanager
@@ -157,12 +303,18 @@ def init_db() -> None:
                 status TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
+                activated_at TEXT,
+                expires_at TEXT,
+                next_renewal_at TEXT,
                 approved_at TEXT,
                 rejected_at TEXT
             )
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)")
+        conn.execute("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS activated_at TEXT")
+        conn.execute("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS expires_at TEXT")
+        conn.execute("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS next_renewal_at TEXT")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS generations (
@@ -191,12 +343,12 @@ def load_subscriptions() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, subscriber_key, full_name, email, phone, plan_id, payment_reference,
-                   status, created_at, updated_at, approved_at, rejected_at
+                   status, created_at, updated_at, activated_at, expires_at, next_renewal_at, approved_at, rejected_at
             FROM subscriptions
             ORDER BY created_at DESC
             """
         ).fetchall()
-    return [dict(row) for row in rows]
+    return [subscription_effective_state(dict(row)) for row in rows]
 
 
 def get_generation_analytics() -> dict:
@@ -250,11 +402,19 @@ def get_generation_analytics() -> dict:
             """
         ).fetchall()
     subscription_counts = {row["status"]: row["count"] for row in subscription_rows}
+    subscriptions = load_subscriptions()
+    active_count = sum(1 for item in subscriptions if item.get("status") == "approved")
+    expired_count = sum(1 for item in subscriptions if item.get("status") == "expired")
+    renewal_due_count = sum(1 for item in subscriptions if item.get("status") == "approved" and item.get("renewal_due_soon"))
+    grace_count = sum(1 for item in subscriptions if item.get("in_grace_period"))
     return {
         "summary": {
             "total_generations": int(totals["total_generations"] or 0),
             "total_downloads": int(totals["total_downloads"] or 0),
-            "approved_subscriptions": int(subscription_counts.get("approved", 0)),
+            "active_subscriptions": active_count,
+            "expired_subscriptions": expired_count,
+            "renewal_due_subscriptions": renewal_due_count,
+            "grace_subscriptions": grace_count,
             "pending_subscriptions": int(subscription_counts.get("pending", 0)),
             "rejected_subscriptions": int(subscription_counts.get("rejected", 0)),
         },
@@ -274,20 +434,22 @@ def find_subscription(subscriber_key: str) -> Optional[dict]:
         row = conn.execute(
             """
             SELECT id, subscriber_key, full_name, email, phone, plan_id, payment_reference,
-                   status, created_at, updated_at, approved_at, rejected_at
+                   status, created_at, updated_at, activated_at, expires_at, next_renewal_at, approved_at, rejected_at
             FROM subscriptions
             WHERE subscriber_key = %s OR lower(email) = %s OR lower(phone) = %s
             LIMIT 1
             """,
             (key, key, key),
         ).fetchone()
-    return dict(row) if row else None
+    return subscription_effective_state(dict(row)) if row else None
 
 
 def upsert_subscription(payload: SubscriptionRequest) -> dict:
-    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    now = iso_now()
     key = normalize_key(payload.email or payload.phone)
     existing = find_subscription(key)
+    normalized_plan = normalize_plan_id(payload.plan_id)
+    existing_active = bool(existing and existing.get("status") == "approved")
 
     record = {
         "id": existing["id"] if existing else str(uuid.uuid4()),
@@ -295,22 +457,34 @@ def upsert_subscription(payload: SubscriptionRequest) -> dict:
         "full_name": payload.full_name.strip(),
         "email": payload.email.strip(),
         "phone": payload.phone.strip(),
-        "plan_id": payload.plan_id,
+        "plan_id": normalized_plan,
         "payment_reference": payload.payment_reference.strip(),
-        "status": existing["status"] if existing and existing.get("status") == "approved" else "pending",
+        "status": "approved" if existing_active else "pending",
         "created_at": existing["created_at"] if existing else now,
         "updated_at": now,
-        "approved_at": existing.get("approved_at") if existing and existing.get("status") == "approved" else None,
+        "activated_at": existing.get("activated_at") if existing_active else None,
+        "expires_at": existing.get("expires_at") if existing_active else None,
+        "next_renewal_at": existing.get("next_renewal_at") if existing_active else None,
+        "approved_at": existing.get("approved_at") if existing_active else None,
         "rejected_at": None,
     }
+
+    if existing_active and existing.get("status") == "approved" and existing.get("expires_at"):
+        expires_dt = parse_iso_datetime(existing.get("expires_at"))
+        if expires_dt and datetime.utcnow().replace(microsecond=0) > expires_dt:
+            record["status"] = "pending"
+            record["activated_at"] = None
+            record["expires_at"] = None
+            record["next_renewal_at"] = None
+            record["approved_at"] = None
 
     with get_db_connection() as conn:
         conn.execute(
             """
             INSERT INTO subscriptions (
                 id, subscriber_key, full_name, email, phone, plan_id, payment_reference,
-                status, created_at, updated_at, approved_at, rejected_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                status, created_at, updated_at, activated_at, expires_at, next_renewal_at, approved_at, rejected_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT(subscriber_key) DO UPDATE SET
                 full_name=excluded.full_name,
                 email=excluded.email,
@@ -319,6 +493,9 @@ def upsert_subscription(payload: SubscriptionRequest) -> dict:
                 payment_reference=excluded.payment_reference,
                 status=excluded.status,
                 updated_at=excluded.updated_at,
+                activated_at=excluded.activated_at,
+                expires_at=excluded.expires_at,
+                next_renewal_at=excluded.next_renewal_at,
                 approved_at=excluded.approved_at,
                 rejected_at=excluded.rejected_at
             """,
@@ -333,17 +510,20 @@ def upsert_subscription(payload: SubscriptionRequest) -> dict:
                 record["status"],
                 record["created_at"],
                 record["updated_at"],
+                record["activated_at"],
+                record["expires_at"],
+                record["next_renewal_at"],
                 record["approved_at"],
                 record["rejected_at"],
             ),
         )
         conn.commit()
 
-    return record
+    return subscription_effective_state(record)
 
 
 def set_subscription_status(subscription_id: str, status: str) -> dict:
-    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    now = iso_now()
     with get_db_connection() as conn:
         row = conn.execute("SELECT * FROM subscriptions WHERE id = %s", (subscription_id,)).fetchone()
         if not row:
@@ -353,18 +533,37 @@ def set_subscription_status(subscription_id: str, status: str) -> dict:
         item["updated_at"] = now
         if status == "approved":
             item["approved_at"] = now
+            item["rejected_at"] = None
+            item["activated_at"] = now
+            activated_at, expires_at, next_renewal_at = calculate_cycle_dates(item.get("plan_id", "monthly"), now)
+            item["activated_at"] = activated_at
+            item["expires_at"] = expires_at
+            item["next_renewal_at"] = next_renewal_at
         if status == "rejected":
             item["rejected_at"] = now
+            item["approved_at"] = None
+            item["activated_at"] = None
+            item["expires_at"] = None
+            item["next_renewal_at"] = None
         conn.execute(
             """
             UPDATE subscriptions
-            SET status = %s, updated_at = %s, approved_at = %s, rejected_at = %s
+            SET status = %s, updated_at = %s, activated_at = %s, expires_at = %s, next_renewal_at = %s, approved_at = %s, rejected_at = %s
             WHERE id = %s
             """,
-            (item["status"], item["updated_at"], item.get("approved_at"), item.get("rejected_at"), subscription_id),
+            (
+                item["status"],
+                item["updated_at"],
+                item.get("activated_at"),
+                item.get("expires_at"),
+                item.get("next_renewal_at"),
+                item.get("approved_at"),
+                item.get("rejected_at"),
+                subscription_id,
+            ),
         )
         conn.commit()
-        return item
+        return subscription_effective_state(item)
 
 
 def save_generation(
@@ -1413,6 +1612,21 @@ async def presentation_page(request: Request):
     )
 
 
+@app.get("/subscription-history", response_class=HTMLResponse)
+async def subscription_history_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "subscription_history.html",
+        {
+            "page_title": "Subscription History",
+            "payment_name": PAYMENT_NAME,
+            "payment_account": PAYMENT_ACCOUNT,
+            "payment_bank": PAYMENT_BANK,
+            "admin_path": "/admin",
+        },
+    )
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     return templates.TemplateResponse(
@@ -1436,6 +1650,25 @@ async def get_plans():
 async def subscription_status(subscriber_key: str = Query(default="")):
     record = find_subscription(subscriber_key)
     return {"status": record.get("status", "pending") if record else "unregistered", "subscription": record}
+
+
+@app.get("/api/subscription-history")
+async def subscription_history(subscriber_key: str = Query(default="")):
+    subscription = find_subscription(subscriber_key)
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    generations = list_generations(subscriber_key, limit=20)
+    return {
+        "subscription": subscription,
+        "generations": generations,
+        "summary": {
+            "total_generations": len(generations),
+            "total_downloads": sum(int(item.get("download_count") or 0) for item in generations),
+            "grace_ends_at": subscription.get("grace_ends_at"),
+            "days_remaining": subscription.get("days_remaining"),
+            "grace_days_remaining": subscription.get("grace_days_remaining"),
+        },
+    }
 
 
 @app.post("/api/subscribe")
@@ -1513,7 +1746,12 @@ async def generate_plan(
         raise HTTPException(status_code=403, detail="Subscription required. Please subscribe before using the app.")
 
     subscription = find_subscription(subscriber_key)
-    if not subscription or subscription.get("status") != "approved":
+    if not subscription:
+        raise HTTPException(status_code=403, detail="Subscription required. Please subscribe before using the app.")
+    if subscription.get("status") == "expired":
+        renewal = subscription.get("next_renewal_at") or subscription.get("expires_at") or "the renewal date"
+        raise HTTPException(status_code=403, detail=f"Subscription expired. Please resubscribe to renew access from {renewal}.")
+    if subscription.get("status") != "approved":
         raise HTTPException(status_code=403, detail="Subscription pending. Access is unlocked after admin approval.")
 
     template_text = ""

@@ -364,6 +364,7 @@
                 <div class="page-switch">
                     <a class="page-pill {% if mode == 'lesson' %}active{% endif %}" href="/">Lesson Plan DOCX</a>
                     <a class="page-pill {% if mode == 'presentation' %}active{% endif %}" href="/presentation">Presentation PPTX</a>
+                    <a class="page-pill" href="/subscription-history">Subscription History</a>
                 </div>
             </div>
         </section>
@@ -476,7 +477,7 @@
                 Submit your payment reference below. The admin will verify payment and manually approve your account before access is enabled.
             </p>
             <div class="lock-note">
-                Subscription is required because every lesson plan uses AI API quota. Termly access is <strong>NGN 2,000</strong>.
+                Subscription is required because every lesson plan uses AI API quota. Monthly access is <strong>NGN 4,000</strong> and annual access is <strong>NGN 40,000</strong>.
                 Payment account: <strong>{{ payment_name }}</strong>, <strong>{{ payment_account }}</strong> on <strong>{{ payment_bank }}</strong>.
             </div>
             <div class="modal-grid">
@@ -601,6 +602,11 @@
             }
         }
 
+        function formatRenewal(value) {
+            if (!value) return '';
+            return formatDate(value);
+        }
+
         async function loadHistory() {
             const subscriberKey = localStorage.getItem(subscriberKeyStorage);
             if (!subscriberKey) {
@@ -653,22 +659,60 @@
             try {
                 const response = await fetch(`/api/subscription-status?subscriber_key=${encodeURIComponent(subscriberKey)}`);
                 const data = await response.json();
+                const subscription = data.subscription || {};
                 if (data.status === 'approved') {
                     setLocked(false);
-                    setStatus('ok', pageMode === 'presentation' ? 'Access approved. You can generate presentations now.' : 'Access approved. You can generate lesson plans now.');
+                    const expiresText = formatRenewal(subscription.expires_at || subscription.next_renewal_at);
+                    const daysLeft = Number.isFinite(Number(subscription.days_remaining))
+                        ? Number(subscription.days_remaining)
+                        : null;
+                    const daysLeftText = daysLeft === null
+                        ? ''
+                        : daysLeft === 1
+                            ? '1 day left'
+                            : `${daysLeft} days left`;
+                    const accessText = pageMode === 'presentation'
+                        ? 'Presentation access is active'
+                        : 'Lesson plan access is active';
+                    const renewalText = subscription.renewal_due_soon
+                        ? `Renewal is due soon on ${expiresText}.`
+                        : `Next renewal: ${expiresText}.`;
+                    if (subscription.in_grace_period) {
+                        const graceEndsText = formatRenewal(subscription.grace_ends_at || subscription.expires_at || subscription.next_renewal_at);
+                        setStatus('warn', `Access approved. ${accessText} is in grace period until ${graceEndsText}.`);
+                        subscriptionStatus.className = 'status warn';
+                        subscriptionStatus.textContent = `Activated on ${formatRenewal(subscription.activated_at)}. Grace ends on ${graceEndsText}.${daysLeftText ? ` (${daysLeftText})` : ''}`;
+                    } else {
+                        setStatus('ok', `Access approved. ${accessText} until ${expiresText}. ${renewalText}`);
+                        subscriptionStatus.className = 'status ok';
+                        subscriptionStatus.textContent = `Activated on ${formatRenewal(subscription.activated_at)}. ${renewalText}${daysLeftText ? ` (${daysLeftText})` : ''}`;
+                    }
                     hideModal();
+                } else if (data.status === 'expired') {
+                    setLocked(true);
+                    const expiresText = formatRenewal(subscription.expires_at || subscription.next_renewal_at);
+                    setStatus('warn', `Subscription expired on ${expiresText}. Please resubscribe to continue access.`);
+                    subscriptionStatus.className = 'status warn';
+                    subscriptionStatus.textContent = `Your subscription expired on ${expiresText}. Please resubscribe to renew access.`;
+                    showModal();
                 } else if (data.status === 'pending') {
                     setLocked(true);
                     setStatus('warn', 'Subscription is pending admin approval.');
+                    subscriptionStatus.className = 'status warn';
+                    subscriptionStatus.textContent = 'Your subscription is pending admin approval.';
                     showModal();
                 } else {
                     setLocked(true);
                     setStatus('warn', 'No active subscription was found. Please subscribe to continue.');
+                    subscriptionStatus.className = 'status warn';
+                    subscriptionStatus.textContent = 'No active subscription was found. Please subscribe to continue.';
                     showModal();
                 }
             } catch (err) {
                 setLocked(true);
                 setStatus('err', 'Could not verify subscription status.');
+                subscriptionStatus.className = 'status err';
+                subscriptionStatus.textContent = 'Could not verify subscription status.';
                 showModal();
             }
         }

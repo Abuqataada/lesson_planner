@@ -71,12 +71,17 @@
             <div class="grid metrics">
                 <div class="metric"><strong id="totalCount">0</strong><span class="muted">Total requests</span></div>
                 <div class="metric"><strong id="pendingCount">0</strong><span class="muted">Pending approval</span></div>
-                <div class="metric"><strong id="approvedCount">0</strong><span class="muted">Approved access</span></div>
+                <div class="metric"><strong id="approvedCount">0</strong><span class="muted">Active access</span></div>
             </div>
             <div class="grid metrics section">
                 <div class="metric"><strong id="generationCount">0</strong><span class="muted">Generated files</span></div>
                 <div class="metric"><strong id="downloadCount">0</strong><span class="muted">Total downloads</span></div>
                 <div class="metric"><strong id="themeCount">0</strong><span class="muted">Tracked subjects</span></div>
+            </div>
+            <div class="grid metrics section">
+                <div class="metric"><strong id="activeCount">0</strong><span class="muted">Active subscriptions</span></div>
+                <div class="metric"><strong id="expiredCount">0</strong><span class="muted">Expired subscriptions</span></div>
+                <div class="metric"><strong id="nextRenewalCount">0</strong><span class="muted">Renewal due soon</span></div>
             </div>
             <div class="section mini-grid three">
                 <div class="mini-card">
@@ -108,11 +113,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Name</th><th>Contact</th><th>Plan</th><th>Payment Ref</th><th>Status</th><th>Created</th><th>Actions</th>
+                            <th>Name</th><th>Contact</th><th>Plan</th><th>Payment Ref</th><th>Status</th><th>Activated</th><th>Expires</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rows">
-                        <tr><td colspan="7" class="muted">Enter the admin password and load subscription requests.</td></tr>
+                        <tr><td colspan="8" class="muted">Enter the admin password and load subscription requests.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -128,6 +133,9 @@
         const generationCount = document.getElementById('generationCount');
         const downloadCount = document.getElementById('downloadCount');
         const themeCount = document.getElementById('themeCount');
+        const activeCount = document.getElementById('activeCount');
+        const expiredCount = document.getElementById('expiredCount');
+        const nextRenewalCount = document.getElementById('nextRenewalCount');
         const formatStats = document.getElementById('formatStats');
         const subjectStats = document.getElementById('subjectStats');
         const themeStats = document.getElementById('themeStats');
@@ -149,15 +157,19 @@
             totalCount.textContent = items.length;
             pendingCount.textContent = items.filter(i=>i.status==='pending').length;
             approvedCount.textContent = items.filter(i=>i.status==='approved').length;
-            if (!items.length){ rows.innerHTML = '<tr><td colspan="7" class="muted">No subscription requests yet.</td></tr>'; return; }
+            if (!items.length){ rows.innerHTML = '<tr><td colspan="8" class="muted">No subscription requests yet.</td></tr>'; return; }
             rows.innerHTML = items.map(item => `
                 <tr>
                     <td><strong>${escapeHtml(item.full_name)}</strong><br><span class="muted">${escapeHtml(item.id)}</span></td>
                     <td>${escapeHtml(item.email)}<br>${escapeHtml(item.phone)}</td>
                     <td>${escapeHtml(item.plan_id)}</td>
                     <td>${escapeHtml(item.payment_reference)}</td>
-                    <td><span class="status ${statusClass(item.status)}">${escapeHtml(item.status || 'pending')}</span></td>
-                    <td>${escapeHtml(item.created_at)}</td>
+                    <td>
+                        <span class="status ${statusClass(item.status)}">${escapeHtml(item.status || 'pending')}</span>
+                        ${item.in_grace_period ? '<br><span class="muted">In grace period</span>' : ''}
+                    </td>
+                    <td>${escapeHtml(item.activated_at || item.approved_at || '')}</td>
+                    <td>${escapeHtml(item.next_renewal_at || item.expires_at || '')}${Number.isFinite(Number(item.days_remaining)) ? `<br><span class="muted">${Number(item.days_remaining) === 1 ? '1 day left' : `${Number(item.days_remaining)} days left`}</span>` : ''}</td>
                     <td>
                         <div class="row-actions">
                             <button class="btn btn-primary small" data-action="approve" data-id="${item.id}">Approve</button>
@@ -190,6 +202,9 @@
             generationCount.textContent = summary.total_generations || 0;
             downloadCount.textContent = summary.total_downloads || 0;
             themeCount.textContent = (data.by_subject || []).length || 0;
+            activeCount.textContent = summary.active_subscriptions || 0;
+            expiredCount.textContent = summary.expired_subscriptions || 0;
+            nextRenewalCount.textContent = summary.renewal_due_subscriptions || 0;
 
             const formatItems = data.by_format || [];
             formatStats.innerHTML = formatItems.length

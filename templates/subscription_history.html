@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <style>
+        :root {
+            --bg:#f5f8ff;
+            --panel:rgba(255,255,255,.94);
+            --text:#14213d;
+            --muted:#5b6b84;
+            --line:rgba(20,33,61,.10);
+            --accent:#2563eb;
+            --accent-2:#14b8a6;
+            --warn:#f59e0b;
+            --good:#0f766e;
+            --danger:#dc2626;
+            --shadow:0 18px 55px rgba(37,99,235,.12);
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{
+            min-height:100vh;
+            font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+            color:var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(37,99,235,.16), transparent 26%),
+                radial-gradient(circle at top right, rgba(20,184,166,.12), transparent 22%),
+                linear-gradient(180deg,#ffffff 0%,#eef4ff 100%);
+            padding:1.5rem;
+        }
+        .wrap{max-width:1200px;margin:0 auto;display:grid;gap:1rem}
+        .panel{
+            background:var(--panel);
+            border:1px solid var(--line);
+            border-radius:28px;
+            box-shadow:var(--shadow);
+            backdrop-filter:blur(10px);
+            padding:1.25rem;
+        }
+        .eyebrow{
+            display:inline-flex;align-items:center;gap:.5rem;color:var(--accent);
+            background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.12);
+            border-radius:999px;padding:.4rem .8rem;font-size:.78rem;font-weight:800;
+            letter-spacing:.08em;text-transform:uppercase;
+        }
+        .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent-2)}
+        h1{font-size:clamp(1.9rem,4vw,3rem);margin:.6rem 0 .4rem}
+        .muted{color:var(--muted);line-height:1.6}
+        .toolbar{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+        .btn{
+            border:none;border-radius:16px;padding:.9rem 1.1rem;font-weight:800;
+            cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center
+        }
+        .btn-primary{background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff}
+        .btn-secondary{background:linear-gradient(135deg,#fff,#eef4ff);color:var(--text);border:1px solid var(--line)}
+        .grid{display:grid;gap:1rem}
+        .cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+        .card{
+            background:linear-gradient(180deg,#fff,#f6f9ff);
+            border:1px solid var(--line);
+            border-radius:20px;
+            padding:1rem;
+        }
+        .card strong{display:block;font-size:1.15rem;margin-bottom:.25rem}
+        .status{
+            padding:.95rem 1rem;border-radius:16px;background:#fff;border:1px solid var(--line);
+            color:var(--muted);margin-top:1rem
+        }
+        .status.ok{color:var(--good);background:rgba(20,184,166,.06);border-color:rgba(20,184,166,.25)}
+        .status.warn{color:#9a5b00;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25)}
+        .status.err{color:#b91c1c;background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.25)}
+        .section{margin-top:1rem}
+        .section h2{font-size:1.15rem;margin-bottom:.35rem}
+        .history-list{display:grid;gap:.75rem;margin-top:.75rem}
+        .history-item{
+            display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
+            padding:.9rem 1rem;border-radius:18px;background:#fff;border:1px solid var(--line)
+        }
+        .history-item strong{display:block;margin-bottom:.2rem}
+        .history-meta{color:var(--muted);font-size:.92rem;line-height:1.45}
+        .history-link{
+            text-decoration:none;border-radius:14px;padding:.6rem .85rem;font-weight:800;
+            color:#fff;background:linear-gradient(135deg,var(--accent),#6d28d9)
+        }
+        .pill{
+            display:inline-flex;padding:.35rem .65rem;border-radius:999px;background:rgba(37,99,235,.10);
+            color:#1d4ed8;font-size:.78rem;font-weight:800
+        }
+        .pill.best{background:rgba(20,184,166,.12);color:var(--good)}
+        .tiny{color:var(--muted);font-size:.92rem;line-height:1.5}
+        .page-switch{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+        .page-pill{
+            display:inline-flex;align-items:center;gap:.45rem;padding:.7rem .95rem;border-radius:999px;
+            border:1px solid var(--line);background:#fff;color:var(--text);text-decoration:none;font-weight:800
+        }
+        .page-pill.active{background:linear-gradient(135deg,rgba(37,99,235,.10),rgba(20,184,166,.10));border-color:rgba(37,99,235,.28);color:var(--accent)}
+        .two{grid-template-columns:1.1fr .9fr}
+        @media (max-width:900px){.cards,.two{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="panel">
+            <div class="eyebrow">Account</div>
+            <h1>Subscription History</h1>
+            <p class="muted">See your current plan, renewal dates, grace period, and recent generated files in one place.</p>
+            <div class="page-switch">
+                <a class="page-pill" href="/">Lesson Plan DOCX</a>
+                <a class="page-pill" href="/presentation">Presentation PPTX</a>
+                <a class="page-pill active" href="/subscription-history">Subscription History</a>
+            </div>
+            <div id="statusMessage" class="status warn">Checking your subscription record...</div>
+            <div class="toolbar">
+                <button id="refreshBtn" class="btn btn-primary" type="button">Refresh</button>
+                <button id="goHomeBtn" class="btn btn-secondary" type="button">Go to planner</button>
+            </div>
+        </section>
+
+        <section class="grid cards">
+            <div class="card"><strong id="planName">-</strong><span class="muted">Plan</span></div>
+            <div class="card"><strong id="currentStatus">-</strong><span class="muted">Status</span></div>
+            <div class="card"><strong id="activatedAt">-</strong><span class="muted">Activated</span></div>
+            <div class="card"><strong id="renewalAt">-</strong><span class="muted">Next renewal</span></div>
+        </section>
+
+        <section class="grid two">
+            <div class="panel">
+                <h2>Subscription details</h2>
+                <p class="tiny">This page reflects the same subscription record used to unlock the app.</p>
+                <div class="history-list" style="margin-top:1rem;">
+                    <div class="history-item">
+                        <div>
+                            <strong>Grace period</strong>
+                            <div class="history-meta" id="graceDetails">No grace period active.</div>
+                        </div>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <strong>Payment reference</strong>
+                            <div class="history-meta" id="paymentRef">-</div>
+                        </div>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <strong>Contact</strong>
+                            <div class="history-meta" id="contactInfo">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <h2>Recent downloads</h2>
+                <p class="tiny">Your latest generated lesson plans and presentations appear here.</p>
+                <div id="generationSummary" class="status" style="margin-top:1rem;">Loading recent files...</div>
+                <div id="generationList" class="history-list"></div>
+            </div>
+        </section>
+    </div>
+    <script>
+        const subscriberKeyStorage = 'lesson_planner_subscriber_key';
+        const statusMessage = document.getElementById('statusMessage');
+        const planName = document.getElementById('planName');
+        const currentStatus = document.getElementById('currentStatus');
+        const activatedAt = document.getElementById('activatedAt');
+        const renewalAt = document.getElementById('renewalAt');
+        const graceDetails = document.getElementById('graceDetails');
+        const paymentRef = document.getElementById('paymentRef');
+        const contactInfo = document.getElementById('contactInfo');
+        const generationSummary = document.getElementById('generationSummary');
+        const generationList = document.getElementById('generationList');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const goHomeBtn = document.getElementById('goHomeBtn');
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return value;
+            return d.toLocaleString();
+        }
+
+        function formatDays(value) {
+            const days = Number(value);
+            if (!Number.isFinite(days)) return '';
+            return days === 1 ? '1 day left' : `${days} days left`;
+        }
+
+        function statusText(subscription) {
+            if (!subscription) return '-';
+            if (subscription.in_grace_period) return 'Grace period';
+            return subscription.status || '-';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        async function loadHistory() {
+            const subscriberKey = localStorage.getItem(subscriberKeyStorage);
+            if (!subscriberKey) {
+                statusMessage.className = 'status warn';
+                statusMessage.textContent = 'No subscriber key found. Please subscribe from the main page first.';
+                planName.textContent = '-';
+                currentStatus.textContent = '-';
+                activatedAt.textContent = '-';
+                renewalAt.textContent = '-';
+                graceDetails.textContent = 'No subscription data available yet.';
+                paymentRef.textContent = '-';
+                contactInfo.textContent = '-';
+                generationSummary.textContent = 'Subscribe and generate files to see them here.';
+                generationList.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/subscription-history?subscriber_key=${encodeURIComponent(subscriberKey)}`);
+                if (!response.ok) throw new Error(await response.text());
+                const data = await response.json();
+                const subscription = data.subscription || {};
+                const summary = data.summary || {};
+                const generations = data.generations || [];
+
+                statusMessage.className = subscription.in_grace_period ? 'status warn' : 'status ok';
+                statusMessage.textContent = subscription.in_grace_period
+                    ? `Your account is active but currently in grace period until ${formatDate(subscription.grace_ends_at)}.`
+                    : `Your subscription is active until ${formatDate(subscription.expires_at || subscription.next_renewal_at)}.`;
+
+                planName.textContent = subscription.plan_id || '-';
+                currentStatus.textContent = statusText(subscription);
+                activatedAt.textContent = formatDate(subscription.activated_at);
+                renewalAt.textContent = formatDate(subscription.grace_ends_at || subscription.expires_at || subscription.next_renewal_at);
+                graceDetails.textContent = subscription.in_grace_period
+                    ? `Grace period ends on ${formatDate(subscription.grace_ends_at)} (${formatDays(subscription.grace_days_remaining)}).`
+                    : subscription.renewal_due_soon
+                        ? `Renewal is due soon on ${formatDate(subscription.expires_at || subscription.next_renewal_at)}.`
+                        : 'No grace period active.';
+                paymentRef.textContent = subscription.payment_reference || '-';
+                contactInfo.textContent = `${subscription.full_name || '-'} · ${subscription.email || '-'} · ${subscription.phone || '-'}`;
+
+                generationSummary.textContent = generations.length
+                    ? `You have ${summary.total_generations || generations.length} recent file(s) with ${summary.total_downloads || 0} total download(s).`
+                    : 'No generated files yet.';
+
+                generationList.innerHTML = generations.length
+                    ? generations.map((item) => {
+                        const label = item.output_format === 'pptx' ? 'Presentation' : item.output_format === 'pdf' ? 'PDF Export' : 'Lesson Plan';
+                        const downloadUrl = `/api/generations/${encodeURIComponent(item.id)}/download?subscriber_key=${encodeURIComponent(subscriberKey)}`;
+                        return `
+                            <div class="history-item">
+                                <div>
+                                    <strong>${escapeHtml(label)} - ${escapeHtml(item.subject || 'Untitled')}</strong>
+                                    <div class="history-meta">
+                                        ${escapeHtml(item.topic || '')}<br>
+                                        Created: ${escapeHtml(formatDate(item.created_at))}<br>
+                                        Downloads: ${Number(item.download_count || 0)}${item.presentation_theme ? `<br>Theme: ${escapeHtml(item.presentation_theme)}` : ''}
+                                    </div>
+                                </div>
+                                <a class="history-link" href="${downloadUrl}">Download</a>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<div class="status">No generated files yet. Create a lesson plan or presentation to see them here.</div>';
+            } catch (err) {
+                statusMessage.className = 'status err';
+                statusMessage.textContent = err.message || 'Could not load subscription history.';
+            }
+        }
+
+        refreshBtn.addEventListener('click', loadHistory);
+        goHomeBtn.addEventListener('click', () => { window.location.href = '/'; });
+        loadHistory();
+    </script>
+</body>
+</html>
