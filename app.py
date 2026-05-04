@@ -1741,6 +1741,7 @@ async def generate_plan(
     content_type: str = Form("lesson"),
     presentation_theme: str = Form("auto"),
     lesson_template: UploadFile | None = File(None),
+    lesson_notes: UploadFile | None = File(None),
 ):
     if not subscriber_key:
         raise HTTPException(status_code=403, detail="Subscription required. Please subscribe before using the app.")
@@ -1757,15 +1758,24 @@ async def generate_plan(
     template_text = ""
     template_name = None
     template_labels = {}
-    if lesson_template and lesson_template.filename:
-        template_text, _ = extract_template_outline(lesson_template)
+    notes_file = lesson_notes if normalize_key(content_type) == "presentation" else lesson_template
+    if normalize_key(content_type) == "presentation" and not notes_file:
+        notes_file = lesson_template
+    if notes_file and notes_file.filename:
+        template_text, _ = extract_template_outline(notes_file)
         template_outline = derive_template_outline(template_text)
-        template_name = lesson_template.filename
+        template_name = notes_file.filename
         template_labels = template_outline["labels"] if template_text.strip() else {}
-        template_prompt_text = (
-            f"Detected section order: {', '.join(template_outline['sections']) or 'default lesson structure'}\n\n"
-            f"Template text:\n{template_outline['prompt_text']}"
-        )
+        if normalize_key(content_type) == "presentation":
+            template_prompt_text = (
+                f"Uploaded lesson notes / teaching notes:\n{template_outline['prompt_text']}\n\n"
+                "Use the notes as content guidance for the presentation. Do not copy the layout or structure."
+            )
+        else:
+            template_prompt_text = (
+                f"Detected section order: {', '.join(template_outline['sections']) or 'default lesson structure'}\n\n"
+                f"Template text:\n{template_outline['prompt_text']}"
+            )
     else:
         template_prompt_text = ""
 

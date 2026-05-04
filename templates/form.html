@@ -394,12 +394,18 @@
                     <label for="topic">Topic</label>
                     <input type="text" id="topic" name="topic" placeholder="e.g., Introduction to Physics, Fractions" required>
                 </div>
+                <input type="hidden" id="content_type" name="content_type" value="{{ mode }}">
                 <div>
+                    {% if mode == 'presentation' %}
+                    <label for="lesson_notes">Lesson Notes <span class="tiny">(optional)</span></label>
+                    <input type="file" id="lesson_notes" name="lesson_notes" accept=".pdf,.docx">
+                    <p class="tiny" style="margin-top:.45rem;">Upload your existing lesson notes in PDF or DOCX. If blank, the app will use the default topic content.</p>
+                    {% else %}
                     <label for="lesson_template">Lesson Format Template <span class="tiny">(optional)</span></label>
                     <input type="file" id="lesson_template" name="lesson_template" accept=".pdf,.docx">
                     <p class="tiny" style="margin-top:.45rem;">Upload a PDF or DOCX lesson format. If blank, the default format is used.</p>
+                    {% endif %}
                 </div>
-                <input type="hidden" id="content_type" name="content_type" value="{{ mode }}">
                 <div class="section-title" style="grid-column:1 / -1;">
                     <h3>Export Type</h3>
                     <p class="subtle">Choose the file format you want to download.</p>
