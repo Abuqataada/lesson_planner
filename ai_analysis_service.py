@@ -57,6 +57,20 @@ class AIAnalysisService:
                 return self.models
         return self.models
 
+    @staticmethod
+    def _limit_learning_note(value: object, max_words: int = 120, max_points: int = 6) -> str:
+        """Keep the summary compact even when a model ignores the prompt limit."""
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        points = [line.strip(" \t-•") for line in text.splitlines() if line.strip()][:max_points]
+        compact = "\n".join(points) if points else text
+        words = compact.split()
+        if len(words) <= max_words:
+            return compact
+        shortened = " ".join(words[:max_words]).rstrip(" ,;:")
+        return shortened if shortened.endswith((".", "!", "?")) else shortened + "."
+
     def generate_lesson_plan(
         self,
         subject: str,
@@ -88,7 +102,7 @@ Teacher-provided class notes:
 {class_notes.strip()}
 --- END CLASS NOTES ---
 
-Treat these notes as the primary source for lesson content. Extract and organize their definitions, facts, examples, activities, and exercises. Correct only clear errors, omit irrelevant material, and do not claim that the notes contain information they do not contain. Supplement them only when needed to make the lesson complete and pedagogically sound.
+Treat these notes as the primary source for lesson content. Extract and organize their definitions, facts, examples, activities, and exercises. Correct only clear errors, omit irrelevant material, and do not claim that the notes contain information they do not contain. Supplement them only when needed to make the lesson complete and pedagogically sound. The learning_note field must be a concise summary of these notes, not a copy of them.
 """
         prompt = f"""Generate a complete, classroom-ready lesson plan for a {class_level} class studying {subject}. The topic is "{topic}".
 {template_hint}
@@ -113,7 +127,7 @@ Quality requirements based on the supplied lesson-plan model:
 - Give 3-5 realistic instructional resources suitable for the class and subject.
 - State 2-3 concrete prior concepts or experiences learners already have.
 - Make the warm-up an engaging 3-5 minute activity with a teacher prompt and expected learner response.
-- Make learning_note the most detailed field, with accurate definitions, key ideas, examples, and real-life relevance in a clear sequence. Use newline-separated points, not markdown.
+- Make learning_note a concise summary of the essential class-note content. Limit it to 4-6 short newline-separated points and approximately 120 words. Include only the central definition, key ideas, and at most one brief example or application. Do not repeat warm-up instructions, teacher activities, student activities, assessment questions, homework, or long passages from the source notes.
 - In teacher_activities, include introduction, explanation or modelling, guided practice, differentiation, checks for understanding, and feedback.
 - In student_activities, include collaborative work, individual practice, and a short discussion or report-back where appropriate.
 - In assessment, state observable evidence and at least 3 topic-specific questions or tasks spanning the objectives.
@@ -153,6 +167,7 @@ Quality requirements based on the supplied lesson-plan model:
                 for key in required:
                     if key not in plan:
                         plan[key] = f"Auto-generated {key.replace('_', ' ')}"
+                plan["learning_note"] = self._limit_learning_note(plan.get("learning_note"))
                 return plan
             except Exception:
                 continue
@@ -254,7 +269,7 @@ Write the content in a teaching style that fits a classroom presentation. Use sh
             },
             "prior_knowledge": f"Learners can recall related ideas previously studied in {subject}, describe familiar experiences connected to {topic}, and follow simple observation and discussion routines.",
             "warmup_activity": f"Display a familiar example connected to {topic}. Ask learners to observe it, share what they notice with a partner, and suggest how it relates to {subject}. Record predictions to revisit.",
-            "learning_note": f"Definition of {topic}.\n• Key principles.\n• Examples.\n• Importance in {subject}.",
+            "learning_note": f"Meaning: {topic} is a key concept in {subject}.\nKey idea: identify its main features or principles.\nExample: connect {topic} to one familiar situation.\nImportance: explain how it supports understanding or problem-solving in {subject}.",
             "teacher_activities": f"Introduce {topic} with a familiar example and elicit prior ideas. Explain and model the key meaning and features step by step. Ask checking questions, guide paired practice, support learners who need prompts or visuals, challenge faster learners with a new application, and correct misconceptions.",
             "student_activities": f"Observe the starter and share prior ideas. Record the main points about {topic}. Work in pairs to explain examples, complete an individual application task, report answers, and improve them after feedback.",
             "assessment": f"Use observation, oral questioning, and the individual task as evidence. Ask learners to: 1) define {topic}; 2) explain two key features with an example; and 3) apply the idea to a new real-life situation.",
