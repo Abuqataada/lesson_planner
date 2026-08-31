@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+python-docx
+openai
+python-dotenv
+jinja2
+numpy
+pypdf
+psycopg[binary]
+python-pptx
+reportlab

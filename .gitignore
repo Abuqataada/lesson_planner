@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+lesson_planner.db
+lesson_planner.sqlite3
+.pytest_cache/
+.venv/
+venv/
+env/

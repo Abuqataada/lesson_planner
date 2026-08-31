@@ -1,0 +1,153 @@
+{
+  "input": "C:\\Users\\USER\\Desktop\\HHM\\LESSON PLAN\\Sample Lesson Plan.docx",
+  "fonts_by_char_count": {},
+  "direct_run_formatting_runs": 162,
+  "direct_paragraph_formatting_paragraphs": 2,
+  "heading_like_paragraphs_not_heading_style": [
+    {
+      "para_index": 1,
+      "text": "Lesson Plan",
+      "style": "Normal"
+    },
+    {
+      "para_index": 8,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 20,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 32,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 42,
+      "text": "Subtopic",
+      "style": "Normal"
+    },
+    {
+      "para_index": 44,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 54,
+      "text": "Date ",
+      "style": "Normal"
+    },
+    {
+      "para_index": 56,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 66,
+      "text": "Week ",
+      "style": "Normal"
+    },
+    {
+      "para_index": 68,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 78,
+      "text": "Duration ",
+      "style": "Normal"
+    },
+    {
+      "para_index": 80,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 90,
+      "text": "Student Age Group",
+      "style": "Normal"
+    },
+    {
+      "para_index": 92,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 106,
+      "text": "Learning Objectives (Differentiated)",
+      "style": "Normal"
+    },
+    {
+      "para_index": 117,
+      "text": "Prior Knowledge",
+      "style": "Normal"
+    },
+    {
+      "para_index": 119,
+      "text": "Warm-up Activity",
+      "style": "Normal"
+    },
+    {
+      "para_index": 121,
+      "text": "Summarised Learning Note",
+      "style": "Normal"
+    },
+    {
+      "para_index": 122,
+      "text": "Learning Activities",
+      "style": "Normal"
+    },
+    {
+      "para_index": 123,
+      "text": "Learning Activities",
+      "style": "Normal"
+    }
+  ],
+  "examples": {
+    "direct_run_formatting": [
+      {
+        "para_index": 1,
+        "run_text": "Lesson Plan",
+        "style": "Normal"
+      },
+      {
+        "para_index": 6,
+        "run_text": "Class",
+        "style": "Normal"
+      },
+      {
+        "para_index": 6,
+        "run_text": ":",
+        "style": "Normal"
+      },
+      {
+        "para_index": 8,
+        "run_text": "Learning Objectives (Differentiated)",
+        "style": "Normal"
+      },
+      {
+        "para_index": 9,
+        "run_text": "Basic Objective (for struggling learners):",
+        "style": "Normal"
+      }
+    ],
+    "direct_paragraph_formatting": [
+      {
+        "para_index": 156,
+        "text": "",
+        "style": "List Paragraph"
+      },
+      {
+        "para_index": 163,
+        "text": "",
+        "style": "List Paragraph"
+      }
+    ]
+  },
+  "notes": [
+    "Direct formatting is not always wrong, but it often causes inconsistent output when templates change.",
+    "Heading-like paragraphs not using Heading styles can break TOC and accessibility."
+  ]
+}
