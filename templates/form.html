@@ -313,19 +313,6 @@
             font-weight:800;
         }
         .pill.best { background:rgba(20,184,166,.12); color:#0f766e; }
-        .admin-link {
-            position:fixed;
-            right:1rem;
-            bottom:1rem;
-            background:#fff;
-            color:var(--accent);
-            border:1px solid var(--line);
-            border-radius:999px;
-            padding:.75rem .95rem;
-            text-decoration:none;
-            box-shadow:var(--shadow);
-            z-index:2;
-        }
         .page-switch {
             display:flex;
             gap:.75rem;
@@ -349,27 +336,130 @@
             border-color:rgba(37,99,235,.28);
             color:var(--accent);
         }
-        @media (max-width:1000px) { .shell, .modal-grid { grid-template-columns:1fr; } }
+        /* 2026 workspace redesign */
+        :root {
+            --bg:#f3f4ee;
+            --panel:#ffffff;
+            --text:#17211b;
+            --muted:#667168;
+            --line:#dfe4dc;
+            --accent:#176b4d;
+            --accent-2:#e9a23b;
+            --warn:#b66a15;
+            --danger:#b42318;
+            --shadow:0 24px 70px rgba(25,48,36,.10);
+        }
+        body {
+            background:#f3f4ee;
+            font-family:Inter, "Segoe UI", Arial, sans-serif;
+        }
+        body::before {
+            content:"";
+            position:fixed;
+            inset:0;
+            pointer-events:none;
+            background-image:linear-gradient(rgba(23,107,77,.035) 1px, transparent 1px),linear-gradient(90deg, rgba(23,107,77,.035) 1px, transparent 1px);
+            background-size:32px 32px;
+            mask-image:linear-gradient(to bottom, #000, transparent 80%);
+        }
+        .shell {
+            position:relative;
+            display:grid;
+            grid-template-columns:320px minmax(0, 860px);
+            align-items:start;
+            justify-content:center;
+            gap:2rem;
+            max-width:1260px;
+            padding:2rem;
+        }
+        .hero {
+            position:sticky;
+            top:2rem;
+            min-height:calc(100vh - 4rem);
+            padding:2rem;
+            border:0;
+            border-radius:24px;
+            color:#f7fbf8;
+            background:linear-gradient(155deg,#102d22 0%,#176b4d 62%,#23815f 100%);
+            box-shadow:0 28px 65px rgba(16,45,34,.22);
+        }
+        .hero::before { width:310px; height:310px; right:-130px; top:-110px; background:rgba(255,255,255,.07); }
+        .hero::after { width:250px; height:250px; left:-120px; bottom:-100px; background:rgba(233,162,59,.16); }
+        .brand { display:flex; align-items:center; gap:.75rem; margin-bottom:4rem; position:relative; z-index:1; }
+        .brand-mark { display:grid; place-items:center; width:42px; height:42px; border-radius:13px; background:#f6c568; color:#173d2e; font-weight:900; font-size:1.1rem; box-shadow:inset 0 0 0 1px rgba(255,255,255,.4); }
+        .brand strong { display:block; font-size:1rem; letter-spacing:.01em; }
+        .brand small { display:block; margin-top:.1rem; color:rgba(255,255,255,.62); }
+        .hero .eyebrow { color:#f6c568; background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.12); }
+        .hero .eyebrow::before { background:#f6c568; }
+        h1 { max-width:9ch; font-size:clamp(2.5rem,4vw,4.2rem); letter-spacing:-.055em; line-height:.96; }
+        .hero .lede { color:rgba(255,255,255,.72); line-height:1.7; }
+        .page-switch { display:grid; gap:.55rem; margin-top:2rem; }
+        .page-pill { justify-content:flex-start; color:rgba(255,255,255,.72); background:transparent; border-color:rgba(255,255,255,.12); border-radius:12px; }
+        .page-pill:hover { color:#fff; background:rgba(255,255,255,.08); }
+        .page-pill.active { color:#173d2e; background:#f6c568; border-color:#f6c568; }
+        .hero-points { display:grid; gap:.8rem; margin-top:2.5rem; position:relative; z-index:1; }
+        .hero-point { display:flex; gap:.7rem; align-items:flex-start; color:rgba(255,255,255,.72); font-size:.87rem; line-height:1.5; }
+        .hero-point span { display:grid; place-items:center; flex:0 0 24px; height:24px; border-radius:8px; background:rgba(246,197,104,.16); color:#f6c568; font-weight:900; }
+        .panel { padding:2rem; border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); backdrop-filter:none; }
+        .panel-kicker { color:var(--accent); font-weight:800; font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; margin-bottom:.5rem; }
+        .panel > h2 { font-size:clamp(1.8rem,3vw,2.45rem); letter-spacing:-.035em; }
+        .status { border-radius:12px; }
+        .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+        input,select,textarea { border-radius:11px; padding:.88rem .95rem; border-color:#d9ded7; background:#fbfcfa; }
+        input:focus,select:focus,textarea:focus { background:#fff; border-color:var(--accent); box-shadow:0 0 0 3px rgba(23,107,77,.11); }
+        label { color:#34443a; font-size:.84rem; }
+        .section-title h3 { color:var(--accent); }
+        .btn { border-radius:11px; transition:transform .15s ease,box-shadow .15s ease; }
+        .btn:hover { transform:translateY(-1px); }
+        .btn-primary { background:var(--accent); box-shadow:0 10px 24px rgba(23,107,77,.2); }
+        .btn-secondary { background:#f4f6f2; }
+        .output-option,.card,.history,.history-item { border-radius:14px; background:#fbfcfa; }
+        .history-link { background:var(--accent); border-radius:9px; }
+        .modal { background:rgba(16,45,34,.68); }
+        .modal-card { border-radius:22px; box-shadow:0 30px 100px rgba(0,0,0,.22); }
+        @media (max-width:1000px) {
+            .shell { grid-template-columns:1fr; padding:1rem; }
+            .hero { position:relative; top:0; min-height:auto; }
+            .brand { margin-bottom:2rem; }
+            .hero h1 { max-width:14ch; }
+            .page-switch { grid-template-columns:repeat(3,minmax(0,1fr)); }
+            .modal-grid { grid-template-columns:1fr; }
+        }
+        @media (max-width:680px) {
+            .form-grid,.output-grid,.theme-grid,.page-switch { grid-template-columns:1fr; }
+            .panel,.hero { padding:1.25rem; border-radius:18px; }
+            .history-item { flex-direction:column; }
+        }
     </style>
 </head>
 <body>
     <div class="shell">
         <section class="hero">
             <div>
-                <div class="eyebrow">Lesson planner</div>
+                <div class="brand">
+                    <span class="brand-mark">LP</span>
+                    <span><strong>Lesson Planner</strong><small>AI teaching workspace</small></span>
+                </div>
+                <div class="eyebrow">Plan with confidence</div>
                 <h1>{{ page_heading }}</h1>
                 <p class="lede">
                     {{ page_subtitle }}
                 </p>
                 <div class="page-switch">
-                    <a class="page-pill {% if mode == 'lesson' %}active{% endif %}" href="/">Lesson Plan DOCX</a>
-                    <a class="page-pill {% if mode == 'presentation' %}active{% endif %}" href="/presentation">Presentation PPTX</a>
-                    <a class="page-pill" href="/subscription-history">Subscription History</a>
+                    <a class="page-pill {% if mode == 'lesson' %}active{% endif %}" href="/">01 &nbsp; Lesson plan</a>
+                    <a class="page-pill {% if mode == 'presentation' %}active{% endif %}" href="/presentation">02 &nbsp; Presentation</a>
+                    <a class="page-pill" href="/subscription-history">03 &nbsp; My subscription</a>
+                </div>
+                <div class="hero-points">
+                    <div class="hero-point"><span>✓</span><div>Use your own class notes as the primary content source.</div></div>
+                    <div class="hero-point"><span>✓</span><div>Generate differentiated objectives and aligned assessment.</div></div>
+                    <div class="hero-point"><span>✓</span><div>Download editable, classroom-ready teaching files.</div></div>
                 </div>
             </div>
         </section>
 
         <section class="panel">
+            <div class="panel-kicker">Teacher workspace</div>
             <h2>{% if mode == 'presentation' %}Generate Presentation{% else %}Generate Lesson Plan{% endif %}</h2>
             <p class="subtle">
                 {% if mode == 'presentation' %}
@@ -477,8 +567,6 @@
             </div>
         </section>
     </div>
-
-    <a class="admin-link" href="{{ admin_path }}">Admin dashboard</a>
 
     <div class="modal" id="subscriptionModal" aria-hidden="true">
         <div class="modal-card">

@@ -13,6 +13,7 @@ from typing import Optional
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -78,6 +79,9 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL"
 )
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "omtech-admin")
+ADMIN_DASHBOARD_PATH = os.getenv("ADMIN_DASHBOARD_PATH", "/admin-portal").strip() or "/admin-portal"
+if not ADMIN_DASHBOARD_PATH.startswith("/"):
+    ADMIN_DASHBOARD_PATH = f"/{ADMIN_DASHBOARD_PATH}"
 GENERATION_HISTORY_LIMIT = 10
 
 PAYMENT_NAME = "OMTECH EI LIMITED"
@@ -106,7 +110,21 @@ SUBSCRIPTION_PLANS = [
 RENEWAL_NOTICE_DAYS = 7
 GRACE_PERIOD_DAYS = 3
 
-app = FastAPI(title="Lesson Planner")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    init_db()
+
+    yield
+
+    # Shutdown logic can go here if needed
+
+
+app = FastAPI(
+    title="AI Lesson Planner",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 ai_service = AIAnalysisService()
 
@@ -1568,10 +1586,6 @@ def create_lesson_plan_pptx(
     return bio.getvalue()
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    init_db()
-
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -1588,7 +1602,6 @@ async def home(request: Request):
             "payment_name": PAYMENT_NAME,
             "payment_account": PAYMENT_ACCOUNT,
             "payment_bank": PAYMENT_BANK,
-            "admin_path": "/admin",
         },
     )
 
@@ -1608,7 +1621,6 @@ async def presentation_page(request: Request):
             "payment_name": PAYMENT_NAME,
             "payment_account": PAYMENT_ACCOUNT,
             "payment_bank": PAYMENT_BANK,
-            "admin_path": "/admin",
         },
     )
 
@@ -1623,12 +1635,11 @@ async def subscription_history_page(request: Request):
             "payment_name": PAYMENT_NAME,
             "payment_account": PAYMENT_ACCOUNT,
             "payment_bank": PAYMENT_BANK,
-            "admin_path": "/admin",
         },
     )
 
 
-@app.get("/admin", response_class=HTMLResponse)
+@app.get(ADMIN_DASHBOARD_PATH, response_class=HTMLResponse, include_in_schema=False)
 async def admin_dashboard(request: Request):
     return templates.TemplateResponse(
         request,
@@ -1892,3 +1903,17 @@ async def generate_plan(
         media_type=mime_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )
+    
+    
